@@ -19,6 +19,7 @@ class MigiImport implements ToModel, WithHeadingRow
             'item_code'     => $row['item_code'],
             'qty'           => $row['qty'],
             'uom'           => $row['uom'],
+            'batch'         => 1,
         ]);
     }
 

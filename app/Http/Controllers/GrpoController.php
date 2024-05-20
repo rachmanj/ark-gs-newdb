@@ -14,7 +14,9 @@ class GrpoController extends Controller
 {
     public function index()
     {
-        $is_data = Grpo::exists() ? 1 : 0;
+        // $is_data = Grpo::exists() ? 1 : 0;
+        $is_data = Grpo::where('batch', 1)->exists() ? 1 : 0;
+
 
         return view('grpo.index', compact('is_data'));
     }
@@ -33,7 +35,7 @@ class GrpoController extends Controller
 
     public function truncate()
     {
-        Grpo::truncate();
+        Grpo::where('batch', 1)->delete();
 
         return redirect()->route('grpo.index')->with('success', 'Table has been truncated.');
     }
@@ -49,13 +51,13 @@ class GrpoController extends Controller
         $file = $request->file('file_upload');
 
         // membuat nama file unik
-        $nama_file = rand().$file->getClientOriginalName();
+        $nama_file = rand() . $file->getClientOriginalName();
 
         // upload ke folder file_upload
         $file->move('file_upload', $nama_file);
 
         // import data
-        Excel::import(new GrpoImport, public_path('/file_upload/'.$nama_file));
+        Excel::import(new GrpoImport, public_path('/file_upload/' . $nama_file));
 
         // alihkan halaman kembali
         return redirect()->route('grpo.index')->with('success', 'Data Excel Berhasil Diimport!');
@@ -74,9 +76,9 @@ class GrpoController extends Controller
     public function data()
     {
         $list = Grpo::whereYear('grpo_date', Carbon::now())
-                ->whereMonth('grpo_date', Carbon::now())
-                ->orderBy('grpo_date', 'desc')
-                ->get();
+            ->whereMonth('grpo_date', Carbon::now())
+            ->orderBy('grpo_date', 'desc')
+            ->get();
 
         return datatables()->of($list)
             ->editColumn('grpo_date', function ($list) {
@@ -94,8 +96,8 @@ class GrpoController extends Controller
     public function data_this_year()
     {
         $list = Grpo::whereYear('grpo_date', Carbon::now())
-                ->orderBy('grpo_date', 'desc')
-                ->get();
+            ->orderBy('grpo_date', 'desc')
+            ->get();
 
         return datatables()->of($list)
             ->editColumn('grpo_date', function ($list) {

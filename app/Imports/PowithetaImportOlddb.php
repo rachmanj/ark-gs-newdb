@@ -6,7 +6,7 @@ use App\Models\Powitheta;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class PowithetaImport implements ToModel, WithHeadingRow
+class PowithetaImportOlddb implements ToModel, WithHeadingRow
 {
     /**
      * @param array $row
@@ -37,7 +37,6 @@ class PowithetaImport implements ToModel, WithHeadingRow
             'po_status'             => $row['po_status'],
             'po_delivery_status'    => $row['po_delivery_status'],
             'budget_type'           => $row['budget_type'],
-            'batch'                 => 1,
         ]);
     }
 

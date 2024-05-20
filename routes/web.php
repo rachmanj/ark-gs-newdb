@@ -32,7 +32,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    Route::get('/users/data', [UserController::class, 'data'])->name('users.data');
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('data', [UserController::class, 'data'])->name('data');
+        Route::get('change-password/{id}', [UserController::class, 'change_password'])->name('change_password');
+        Route::put('password-update/{id}', [UserController::class, 'password_update'])->name('password_update');
+    });
     Route::resource('users', UserController::class);
 
     Route::prefix('roles')->name('roles.')->group(function () {
@@ -73,6 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/this_year', [PowithetaController::class, 'index_this_year'])->name('index_this_year');
         Route::get('/{id}', [PowithetaController::class, 'show'])->name('show');
         Route::post('/import_excel', [PowithetaController::class, 'import_excel'])->name('import_excel');
+        Route::post('/import_oldDB', [PowithetaController::class, 'import_oldDB'])->name('import_oldDB');
     });
 
     Route::prefix('grpo')->name('grpo.')->group(function () {

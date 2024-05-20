@@ -14,7 +14,8 @@ class MigiController extends Controller
 {
     public function index()
     {
-        $is_data = Migi::exists() ? 1 : 0;
+        // $is_data = Migi::exists() ? 1 : 0;
+        $is_data = Migi::where('batch', 1)->exists() ? 1 : 0;
 
         return view('migi.index', compact('is_data'));
     }
@@ -33,7 +34,8 @@ class MigiController extends Controller
 
     public function truncate()
     {
-        Migi::truncate();
+        // delete records with batch = 1
+        Migi::where('batch', 1)->delete();
 
         return redirect()->route('migi.index')->with('success', 'Table has been truncated.');
     }
@@ -49,13 +51,13 @@ class MigiController extends Controller
         $file = $request->file('file_upload');
 
         // membuat nama file unik
-        $nama_file = rand().$file->getClientOriginalName();
+        $nama_file = rand() . $file->getClientOriginalName();
 
         // upload ke folder file_upload
         $file->move('file_upload', $nama_file);
 
         // import data
-        Excel::import(new MigiImport, public_path('/file_upload/'.$nama_file));
+        Excel::import(new MigiImport, public_path('/file_upload/' . $nama_file));
 
         // alihkan halaman kembali
         return redirect()->route('migi.index')->with('success', 'Data Excel Berhasil Diimport!');
@@ -74,15 +76,15 @@ class MigiController extends Controller
     public function data()
     {
         $list = Migi::whereYear('posting_date', Carbon::now())
-                ->whereMonth('posting_date', Carbon::now())
-                ->get();
+            ->whereMonth('posting_date', Carbon::now())
+            ->get();
 
         return datatables()->of($list)
-                ->editColumn('posting_date', function ($list) {
-                    return date('d-m-Y', strtotime($list->posting_date));
-                })
-                ->addIndexColumn()
-                ->toJson();
+            ->editColumn('posting_date', function ($list) {
+                return date('d-m-Y', strtotime($list->posting_date));
+            })
+            ->addIndexColumn()
+            ->toJson();
     }
 
     public function data_this_year()
@@ -92,10 +94,10 @@ class MigiController extends Controller
             ->get();
 
         return datatables()->of($list)
-                ->editColumn('posting_date', function ($list) {
-                    return date('d-m-Y', strtotime($list->posting_date));
-                })
-                ->addIndexColumn()
-                ->toJson();
+            ->editColumn('posting_date', function ($list) {
+                return date('d-m-Y', strtotime($list->posting_date));
+            })
+            ->addIndexColumn()
+            ->toJson();
     }
 }

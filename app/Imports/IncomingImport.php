@@ -9,10 +9,10 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class IncomingImport implements ToModel, WithHeadingRow
 {
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+     * @param array $row
+     *
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
     public function model(array $row)
     {
         return new Incoming([
@@ -24,6 +24,7 @@ class IncomingImport implements ToModel, WithHeadingRow
             'item_code'     => $row['item_code'],
             'qty'           => $row['qty'],
             'uom'           => $row['uom'],
+            'batch'         => 1,
         ]);
     }
 

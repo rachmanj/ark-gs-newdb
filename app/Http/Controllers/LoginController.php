@@ -9,7 +9,7 @@ class LoginController extends Controller
 {
     public function index()
     {
-        return view('login.index');
+        return view('login.index1');
     }
 
     public function authenticate(Request $request)
@@ -28,7 +28,7 @@ class LoginController extends Controller
 
             return redirect()->intended('/');
         }
-        
+
         return back()->with('loginError', 'Login failed');
     }
 
@@ -41,6 +41,5 @@ class LoginController extends Controller
         request()->session()->regenerateToken();
 
         return redirect('/');
-
     }
 }

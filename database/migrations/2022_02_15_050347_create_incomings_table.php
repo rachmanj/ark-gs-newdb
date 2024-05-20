@@ -23,6 +23,7 @@ class CreateIncomingsTable extends Migration
             $table->string('item_code')->nullable();
             $table->integer('qty')->nullable();
             $table->string('uom')->nullable();
+            $table->integer('batch')->default(0);
             $table->timestamps();
         });
     }

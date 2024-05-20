@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $projects = ['000H', '001H', '011C', '017C', '021C', '022C', '023C', 'APS'];
+        $projects = ['000H', '001H', '017C', '021C', '022C', '023C', 'APS'];
 
         return view('users.index', compact('projects'));
     }
@@ -64,8 +64,8 @@ class UserController extends Controller
     {
         $this->validate($request, [
             'name'          => 'required|min:3|max:255',
-            'username'      => 'required|min:3|max:20|unique:users,username,'.$id,
-            'email'         => 'required|email:dns|unique:users,email,'.$id,
+            'username'      => 'required|min:3|max:20|unique:users,username,' . $id,
+            'email'         => 'required|email:dns|unique:users,email,' . $id,
             'project_code'  => 'required',
         ]);
 
@@ -78,7 +78,7 @@ class UserController extends Controller
             ]);
 
             $user->password = Hash::make($request->password);
-        } 
+        }
 
         $user->name = $request->name;
         $user->username = $request->username;
@@ -90,7 +90,6 @@ class UserController extends Controller
         $user->syncRoles($request->input('role'));
 
         return redirect()->route('users.index')->with('success', 'User successfuly updated!!');
-
     }
 
     public function destroy($id)
@@ -112,12 +111,34 @@ class UserController extends Controller
         $users = User::all();
 
         return datatables()->of($users)
-                ->editColumn('created_at', function ($users) {
-                    return date('d-m-Y', strtotime($users->created_at));
-                })
-                ->addIndexColumn()
-                ->addColumn('action', 'users.action')
-                ->rawColumns(['action'])
-                ->toJson();
+            ->editColumn('created_at', function ($users) {
+                return date('d-m-Y', strtotime($users->created_at));
+            })
+            ->addIndexColumn()
+            ->addColumn('action', 'users.action')
+            ->rawColumns(['action'])
+            ->toJson();
+    }
+
+    public function change_password($id)
+    {
+        $user = User::findOrFail($id);
+
+        return view('users.change-password', compact(['user']));
+    }
+
+    public function password_update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $this->validate($request, [
+            'password'      => 'required|min:5',
+            'password_confirmation' => 'required_with:password|same:password|min:5'
+        ]);
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return redirect()->route('home')->with('success', 'User password updated successfully');
     }
 }

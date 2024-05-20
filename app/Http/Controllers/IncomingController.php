@@ -14,7 +14,8 @@ class IncomingController extends Controller
 {
     public function index()
     {
-        $is_data = Incoming::exists() ? 1 : 0;
+        // $is_data = Incoming::exists() ? 1 : 0;
+        $is_data = Incoming::where('batch', 1)->exists() ? 1 : 0;
 
         return view('incoming.index', compact('is_data'));
     }
@@ -33,7 +34,8 @@ class IncomingController extends Controller
 
     public function truncate()
     {
-        Incoming::truncate();
+        // delete records with batch = 1
+        Incoming::where('batch', 1)->delete();
 
         return redirect()->route('incoming.index')->with('success', 'Table has been truncated.');
     }
@@ -49,13 +51,13 @@ class IncomingController extends Controller
         $file = $request->file('file_upload');
 
         // membuat nama file unik
-        $nama_file = rand().$file->getClientOriginalName();
+        $nama_file = rand() . $file->getClientOriginalName();
 
         // upload ke folder file_upload
         $file->move('file_upload', $nama_file);
 
         // import data
-        Excel::import(new IncomingImport, public_path('/file_upload/'.$nama_file));
+        Excel::import(new IncomingImport, public_path('/file_upload/' . $nama_file));
 
         // alihkan halaman kembali
         return redirect()->route('incoming.index')->with('success', 'Data Excel Berhasil Diimport!');
@@ -74,28 +76,28 @@ class IncomingController extends Controller
     public function data()
     {
         $list = Incoming::whereYear('posting_date',  Carbon::now())
-                ->whereMonth('posting_date', Carbon::now())
-                ->get();
+            ->whereMonth('posting_date', Carbon::now())
+            ->get();
 
         return datatables()->of($list)
-                ->editColumn('posting_date', function ($list) {
-                    return date('d-m-Y', strtotime($list->posting_date));
-                })
-                ->addIndexColumn()
-                ->toJson();
+            ->editColumn('posting_date', function ($list) {
+                return date('d-m-Y', strtotime($list->posting_date));
+            })
+            ->addIndexColumn()
+            ->toJson();
     }
 
     public function data_this_year()
     {
         $list = Incoming::whereYear('posting_date',  Carbon::now())
-                ->orderby('posting_date')
-                ->get();
+            ->orderby('posting_date')
+            ->get();
 
         return datatables()->of($list)
-                ->editColumn('posting_date', function ($list) {
-                    return date('d-m-Y', strtotime($list->posting_date));
-                })
-                ->addIndexColumn()
-                ->toJson();
+            ->editColumn('posting_date', function ($list) {
+                return date('d-m-Y', strtotime($list->posting_date));
+            })
+            ->addIndexColumn()
+            ->toJson();
     }
 }

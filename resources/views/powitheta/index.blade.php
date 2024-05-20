@@ -24,7 +24,8 @@
             
             @can('upload_data')
             <a href="{{ route('powitheta.truncate') }}" class="btn btn-sm btn-danger float-right {{ $is_data === 1 ? "" : "disabled" }}" onclick="return confirm('Are You sure You want to delete all records?')"><i class="fas fa-trash"></i> Truncate Table</a>
-            <button class="btn btn-sm btn-success float-right mx-2" data-toggle="modal" data-target="#modal-upload" {{ $is_data === 1 ? "disabled" : "" }}><i class="fas fa-upload"></i> Upload</button>
+            <button class="btn btn-sm btn-success float-right mx-2" data-toggle="modal" data-target="#modal-upload_newdb" {{ $is_data === 1 ? "disabled" : "" }}><i class="fas fa-upload"></i> Upload New DB</button>
+            {{-- <button class="btn btn-sm btn-success float-right mx-2" data-toggle="modal" data-target="#modal-upload_olddb" {{ $is_data === 1 ? "disabled" : "" }}><i class="fas fa-upload"></i> Upload Old DB</button> --}}
             @endcan
 
             <a href="{{ route('powitheta.export_this_month') }}" class="btn btn-sm btn-info float-right {{ $is_data === 1 ? "" : "disabled" }}"><i class="fas fa-save"></i> Export to Excel</a>
@@ -50,16 +51,45 @@
       </div>
     </div>
 
-    <div class="modal fade" id="modal-upload">
+    <div class="modal fade" id="modal-upload_newdb">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h4 class="modal-title"> PO With ETA Upload</h4>
+            <h4 class="modal-title"> PO With ETA Upload New DB</h4>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           <form action="{{ route('powitheta.import_excel') }}" enctype="multipart/form-data" method="POST">
+            @csrf
+          <div class="modal-body">
+              <label>Pilih file excel</label>
+              <div class="form-group">
+                <input type="file" name='file_upload' required class="form-control">
+              </div>
+          </div>
+          <div class="modal-footer justify-content-between">
+            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-sm btn-primary"> Upload</button>
+          </div>
+        </form>
+        </div>
+        <!-- /.modal-content -->
+      </div>
+      <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+
+    <div class="modal fade" id="modal-upload_olddb">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title"> PO With ETA Upload Old DB</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ route('powitheta.import_oldDB') }}" enctype="multipart/form-data" method="POST">
             @csrf
           <div class="modal-body">
               <label>Pilih file excel</label>

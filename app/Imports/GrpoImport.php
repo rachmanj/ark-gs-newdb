@@ -9,10 +9,10 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class GrpoImport implements ToModel, WithHeadingRow
 {
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+     * @param array $row
+     *
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
     public function model(array $row)
     {
         return new Grpo([
@@ -33,7 +33,8 @@ class GrpoImport implements ToModel, WithHeadingRow
             'item_amount' => $row['item_amount'],
             'project_code' => $row['project_code'],
             'dept_code' => $row['dept_code'],
-            'remarks' => $row['remarks']
+            'remarks' => $row['remarks'],
+            'batch' => 1
         ]);
     }
 
