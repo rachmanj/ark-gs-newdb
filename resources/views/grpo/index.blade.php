@@ -35,7 +35,6 @@
                 <tr>
                   <th>#</th>
                   <th>PO No</th>
-                  {{-- <th>Delivery D</th> --}}
                   <th>GRPO No</th>
                   <th>GRPO D</th>
                   <th>Vendor Code</th>
@@ -43,11 +42,9 @@
                   <th>Item Code</th>
                   <th>UOM</th>
                   <th>Qty</th>
-                  <th>Curr</th>
+                  {{-- <th>Curr</th> --}}
                   <th>Amount</th>
                   <th>Project</th>
-                  {{-- <th>Dept</th> --}}
-                  {{-- <th></th> --}}
                 </tr>
               </thead>
             </table>
@@ -78,12 +75,9 @@
             <button type="submit" class="btn btn-sm btn-primary"> Upload</button>
           </div>
         </form>
-        </div>
-        <!-- /.modal-content -->
-      </div>
-      <!-- /.modal-dialog -->
-    </div>
-    <!-- /.modal -->
+        </div><!-- /.modal-content -->
+      </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
 @endsection
 
 @section('styles')
@@ -111,28 +105,21 @@
         columns: [
           {data: 'DT_RowIndex', orderable: false, searchable: false},
           {data: 'po_no'},
-          // {data: 'po_date'},
-          // {data: 'po_delivery_date'},
-          // {data: 'po_delivery_status'},
           {data: 'grpo_no'},
           {data: 'grpo_date'},
           {data: 'vendor_code'},
           {data: 'unit_no'},
           {data: 'item_code'},
           {data: 'uom'},
-          // {data: 'description'},
           {data: 'qty'},
-          {data: 'grpo_currency'},
-          // {data: 'unit_price'},
+          // {data: 'grpo_currency'},
           {data: 'item_amount'},
           {data: 'project_code'},
-          // {data: 'dept_code'},
-          // {data: 'action'},
         ],
         fixedHeader: true,
         columnDefs: [
               {
-                "targets": [8, 10],
+                "targets": [8, 9],
                 "className": "text-right"
               }
             ]
