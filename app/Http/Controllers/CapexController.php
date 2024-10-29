@@ -135,12 +135,11 @@ class CapexController extends Controller
     {
         $date = Carbon::now()->subDay();
         $incl_deptcode = ['40', '50', '60', '140'];
-        $projects = $this->include_projects;
 
-        $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
-        foreach ($excl_itemcode as $e) {
-            $excl_itemcode_arr[] = ['item_code', 'not like', $e];
-        };
+        $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
+        $excl_itemcode_arr = array_map(function ($e) {
+            return ['item_code', 'not like', $e];
+        }, $excl_itemcode);
 
         $list = DB::table('powithetas')
             ->whereIn('dept_code', $incl_deptcode)

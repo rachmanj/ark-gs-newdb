@@ -14,7 +14,7 @@ class TestController extends Controller
 
     public function index()
     {
-        // $test = app(GrpoIndexController::class)->index();
+        $test = app(CapexController::class)->reguler_daily();
         // $test = app(YearlyIndexController::class)->index();
         // $test = app(YearlyIndexController::class)->periode();
         // $test = app(YearlyHistoryController::class)->index('2021-01-01');
@@ -22,7 +22,7 @@ class TestController extends Controller
         // $test = app(BudgetController::class)->getPlantBudgetOfMonth('2024-01-01');
         // $test = app(DashboardDailyController::class)->getDailyData();
         // $test = app(PowithetaController::class)->compare_db();
-        $test = app(PowithetaController::class)->clean_olddb();
+        // $test = app(PowithetaController::class)->clean_olddb();
 
         return $test;
     }
