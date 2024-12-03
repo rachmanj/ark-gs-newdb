@@ -144,6 +144,7 @@ class CapexController extends Controller
         $list = DB::table('powithetas')
             ->whereIn('dept_code', $incl_deptcode)
             ->where($excl_itemcode_arr)
+            ->whereYear('po_delivery_date', $date)
             ->whereMonth('po_delivery_date', $date)
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', 'Delivered');
