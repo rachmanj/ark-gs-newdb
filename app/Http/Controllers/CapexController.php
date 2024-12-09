@@ -27,6 +27,7 @@ class CapexController extends Controller
                 ->sum('amount');
 
             $po_sent_amount = DB::table('powithetas')
+                ->whereYear('po_delivery_date', $date)
                 ->whereMonth('po_delivery_date', $date)
                 ->where('po_status', '!=', 'Cancelled')
                 ->where('po_delivery_status', 'Delivered')
