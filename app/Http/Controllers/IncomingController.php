@@ -35,9 +35,10 @@ class IncomingController extends Controller
     public function truncate()
     {
         // delete records with batch = 1
-        Incoming::where('batch', 1)->delete();
+        // Incoming::where('batch', 1)->delete();
+        Incoming::truncate();
 
-        return redirect()->route('incoming.index')->with('success', 'Table has been truncated.');
+        return redirect()->route('incoming.index')->with('success', 'Data has been truncated.');
     }
 
     public function import_excel(Request $request)

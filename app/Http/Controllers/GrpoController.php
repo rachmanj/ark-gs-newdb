@@ -35,7 +35,8 @@ class GrpoController extends Controller
 
     public function truncate()
     {
-        Grpo::where('batch', 1)->delete();
+        // Grpo::where('batch', 1)->delete();
+        Grpo::truncate();
 
         return redirect()->route('grpo.index')->with('success', 'Table has been truncated.');
     }

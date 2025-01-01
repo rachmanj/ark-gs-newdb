@@ -35,9 +35,10 @@ class MigiController extends Controller
     public function truncate()
     {
         // delete records with batch = 1
-        Migi::where('batch', 1)->delete();
+        // Migi::where('batch', 1)->delete();
+        Migi::truncate();
 
-        return redirect()->route('migi.index')->with('success', 'Table has been truncated.');
+        return redirect()->route('migi.index')->with('success', 'Data has been truncated.');
     }
 
     public function import_excel(Request $request)

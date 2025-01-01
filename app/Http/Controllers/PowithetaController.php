@@ -36,10 +36,10 @@ class PowithetaController extends Controller
 
     public function truncate()
     {
-        // Powitheta::truncate();
-        Powitheta::where('batch', 1)->delete();
+        Powitheta::truncate();
+        // Powitheta::where('batch', 1)->delete();
 
-        return redirect()->route('powitheta.index')->with('success', 'New DB has been truncated.');
+        return redirect()->route('powitheta.index')->with('success', 'Data has been truncated.');
     }
 
     public function clean_olddb()

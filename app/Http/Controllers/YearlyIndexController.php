@@ -13,15 +13,23 @@ use Illuminate\Support\Facades\DB;
 class YearlyIndexController extends Controller
 {
     public $include_projects = ['017C', '021C', '022C', '023C', 'APS'];
+    private $included_dept_codes = ['40', '50', '60', '140', '200'];
+    private $excluded_item_codes = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
+    private $excluded_item_codes_with_co; // Will include 'CO%' for specific methods
+
+    public function __construct()
+    {
+        $this->excluded_item_codes_with_co = array_merge(['CO%'], $this->excluded_item_codes);
+    }
 
     public function periode()
     {
-        return Carbon::now();
+        return Carbon::now()->year;
     }
 
     public function index()
     {
-        $yearly= [
+        $yearly = [
             'reguler' => $this->reguler_yearly(),
             'capex' => $this->capex_yearly(),
             'grpo' => $this->grpo_index(),
@@ -35,22 +43,22 @@ class YearlyIndexController extends Controller
     {
         foreach ($this->include_projects as $project) {
             $budget = $this->plant_budget()->where('project_code', $project)
-                    ->where('budget_type_id', 2)
-                    ->sum('amount');
+                ->where('budget_type_id', 2)
+                ->sum('amount');
 
             $pos = $this->po_sent_amount()->where('project_code', $project);
 
             $po_sent_amount = $pos->where(function ($query) {
                 $query->whereNull('budget_type')
-                      ->orWhere('budget_type', 'REG');
-                    })->sum('item_amount');
+                    ->orWhere('budget_type', 'REG');
+            })->sum('item_amount');
 
             // percentage of capex budget vs sent amount, if budget or sent amount is null
             if ($budget == 0 || $po_sent_amount == 0) {
                 $percentage = 0;
             } else {
                 $percentage = $po_sent_amount / $budget;
-            }      
+            }
 
             $reguler[] = [
                 'project' => $project,
@@ -58,7 +66,6 @@ class YearlyIndexController extends Controller
                 'sent_amount' => $po_sent_amount,
                 'percentage' => $percentage
             ];
-            
         };
 
         $total_budget = array_sum(array_column($reguler, 'budget'));
@@ -84,20 +91,20 @@ class YearlyIndexController extends Controller
     public function capex_yearly()
     {
         // $date = Carbon::now()->subYear();
-        
+
         foreach ($this->include_projects as $project) {
             $budget = $this->plant_budget()->where('project_code', $project)
-                    ->where('budget_type_id', 8) // capex
-                    ->sum('amount');
+                ->where('budget_type_id', 8) // capex
+                ->sum('amount');
 
             $po_sent_amount = DB::table('powithetas')
-                            ->whereYear('po_delivery_date', $this->periode())
-                            ->where('po_status', '!=', 'Cancelled')
-                            ->where('po_delivery_status', 'Delivered')
-                            ->where('project_code', $project)
-                            ->where('budget_type', 'CPX')
-                            ->sum('item_amount');
-            
+                ->whereYear('po_delivery_date', $this->periode())
+                ->where('po_status', '!=', 'Cancelled')
+                ->where('po_delivery_status', 'Delivered')
+                ->where('project_code', $project)
+                ->where('budget_type', 'CPX')
+                ->sum('item_amount');
+
             // percentage of capex budget vs sent amount, if budget or sent amount is null
             if ($budget == 0 || $po_sent_amount == 0) {
                 $percentage = 0;
@@ -122,7 +129,7 @@ class YearlyIndexController extends Controller
         } else {
             $percentage = $total_sent / $total_budget;
         }
-        
+
         $result = [
             'capex' => $capex,
             'budget_total' => $total_budget,
@@ -141,34 +148,26 @@ class YearlyIndexController extends Controller
 
     public function po_sent_amount()
     {
-        // $date = Carbon::now()->subYear();
-        $incl_deptcode = ['40', '50', '60', '140'];
+        $excl_itemcode_arr = $this->getExcludedItemCodesArray($this->excluded_item_codes);
 
-        $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
-        foreach ($excl_itemcode as $e) {
-            $excl_itemcode_arr[] = ['item_code', 'not like', $e];
-        };
-
-        $list = DB::table('powithetas')
-            ->whereIn('dept_code', $incl_deptcode)
+        return DB::table('powithetas')
+            ->whereIn('dept_code', $this->included_dept_codes)
             ->where($excl_itemcode_arr)
             ->whereYear('po_delivery_date', $this->periode())
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', 'Delivered');
-            
-        return $list;
     }
 
-    
+
     // GRPO INDEX
     public function grpo_index()
-    {    
+    {
         foreach ($this->include_projects as $project) {
             $po_sent_amount = $this->po_sent_amount()->where('project_code', $project)
-                            ->sum('item_amount');
-            
+                ->sum('item_amount');
+
             $grpo_amount = $this->grpo_amount()->where('project_code', $project)
-                        ->sum('item_amount');
+                ->sum('item_amount');
 
             // percentage of capex budget vs sent amount, if budget or sent amount is null
             if ($po_sent_amount == 0 || $grpo_amount == 0) {
@@ -194,7 +193,7 @@ class YearlyIndexController extends Controller
         } else {
             $total_percentage = $total_grpo_amount / $total_po_sent_amount;
         }
-        
+
         $result = [
             'grpo_yearly' => $grpos,
             'total_grpo_amount' => $total_grpo_amount,
@@ -207,32 +206,24 @@ class YearlyIndexController extends Controller
 
     public function grpo_amount()
     {
-        // $date = Carbon::now()->subYear();
-        $projects = $this->include_projects;
-        $incl_deptcode = ['40', '50', '60', '140'];
-        $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
-        foreach ($excl_itemcode as $e) {
-            $excl_itemcode_arr[] = ['item_code', 'not like', $e];
-        };
+        $excl_itemcode_arr = $this->getExcludedItemCodesArray($this->excluded_item_codes);
 
-        $list = Grpo::whereYear('po_delivery_date', $this->periode())
+        return Grpo::whereYear('po_delivery_date', $this->periode())
             ->where('po_delivery_status', 'Delivered')
-            ->whereIn('project_code', $projects)
-            ->whereIn('dept_code', $incl_deptcode)
+            ->whereIn('project_code', $this->include_projects)
+            ->whereIn('dept_code', $this->included_dept_codes)
             ->where($excl_itemcode_arr);
-
-        return $list;
     }
 
     //NPI INDEX
     public function npi_index()
     {
         foreach ($this->include_projects as $project) {
-           $incoming_qty = $this->incomings()->where('project_code', $project)
-                            ->sum('qty');
-        
+            $incoming_qty = $this->incomings()->where('project_code', $project)
+                ->sum('qty');
+
             $outgoing_qty = $this->outgoing()->where('project_code', $project)
-                            ->sum('qty');
+                ->sum('qty');
 
             // percentage of incoming qty vs outgoing qty, if incoming qty or outgoing qty is null
             if ($incoming_qty == 0 || $outgoing_qty == 0) {
@@ -240,7 +231,7 @@ class YearlyIndexController extends Controller
             } else {
                 $percentage = $incoming_qty / $outgoing_qty;
             }
-            
+
 
             $npi[] = [
                 'project' => $project,
@@ -248,13 +239,12 @@ class YearlyIndexController extends Controller
                 'outgoing_qty' => $outgoing_qty,
                 'percentage' => $percentage
             ];
-
         };
 
         $total_incoming_qty = array_sum(array_column($npi, 'incoming_qty'));
         $total_outgoing_qty = array_sum(array_column($npi, 'outgoing_qty'));
 
-       // percentage of total incoming qty vs total outgoing qty, if incoming qty or outgoing qty is null
+        // percentage of total incoming qty vs total outgoing qty, if incoming qty or outgoing qty is null
         if ($total_incoming_qty == 0 || $total_outgoing_qty == 0) {
             $percentage = 0;
         } else {
@@ -273,40 +263,28 @@ class YearlyIndexController extends Controller
 
     public function incomings()
     {
-        // $date = Carbon::now()->subYear();
+        $excl_itemcode_arr = $this->getExcludedItemCodesArray($this->excluded_item_codes_with_co);
 
-        $incl_deptcode = ['40', '50', '60', '140'];
-
-        $excl_itemcode = ['CO%', 'EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
-        foreach ($excl_itemcode as $e) {
-            $excl_itemcode_arr[] = ['item_code', 'not like', $e];
-        };
-
-        $list = Incoming::whereYear('posting_date', $this->periode())
-                ->whereIn('dept_code', $incl_deptcode)
-                ->where($excl_itemcode_arr)
-                ->get();
-
-        return $list;
+        return Incoming::whereYear('posting_date', $this->periode())
+            ->whereIn('dept_code', $this->included_dept_codes)
+            ->where($excl_itemcode_arr)
+            ->get();
     }
 
     public function outgoing()
     {
-        // $date = Carbon::now()->subYear();
-        $incl_deptcode = ['40', '50', '60', '140'];
+        $excl_itemcode_arr = $this->getExcludedItemCodesArray($this->excluded_item_codes_with_co);
 
-        $excl_itemcode = ['CO%', 'EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
-        foreach ($excl_itemcode as $e) {
-            $excl_itemcode_arr[] = ['item_code', 'not like', $e];
-        };
-
-        $list = Migi::whereYear('posting_date', $this->periode())
-                ->whereIn('dept_code', $incl_deptcode)
-                ->where($excl_itemcode_arr)
-                ->get();
-
-        return $list; 
+        return Migi::whereYear('posting_date', $this->periode())
+            ->whereIn('dept_code', $this->included_dept_codes)
+            ->where($excl_itemcode_arr)
+            ->get();
     }
 
-
+    private function getExcludedItemCodesArray($codes)
+    {
+        return array_map(function ($code) {
+            return ['item_code', 'not like', $code];
+        }, $codes);
+    }
 }
