@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardDailyApiController;
+use App\Http\Controllers\SummaryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,3 +22,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/daily/reguler', [DashboardDailyApiController::class, 'reguler_daily']);
 Route::get('/daily/capex', [DashboardDailyApiController::class, 'capex_daily']);
+Route::get('/unit-summary', [SummaryController::class, 'getUnitSummary']);

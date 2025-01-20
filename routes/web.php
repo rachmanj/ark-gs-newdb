@@ -18,6 +18,7 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\SummaryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -65,6 +66,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/other', [DashboardOtherController::class, 'index'])->name('other.index');
         Route::get('/other-grpo', [DashboardOtherController::class, 'grpo'])->name('other.grpo');
         Route::get('/other-test', [DashboardOtherController::class, 'test'])->name('other.test');
+
+        Route::get('/summary-by-unit', [SummaryController::class, 'index'])->name('summary-by-unit');
     });
 
     Route::prefix('powitheta')->name('powitheta.')->group(function () {
@@ -128,4 +131,6 @@ Route::middleware('auth')->group(function () {
     Route::post('history/generate-monthly', [HistoryController::class, 'generate_monthly'])->name('history.generate_monthly');
 
     Route::get('/test', [TestController::class, 'index'])->name('index');
+
+    Route::get('/unit-summary-table', [SummaryController::class, 'showSummaryTable']);
 });

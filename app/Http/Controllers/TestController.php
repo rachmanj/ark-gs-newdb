@@ -14,7 +14,7 @@ class TestController extends Controller
 
     public function index()
     {
-        $test = app(CapexController::class)->reguler_daily();
+        $test = app(SummaryController::class)->getUnitSummary();
         // $test = app(YearlyIndexController::class)->index();
         // $test = app(YearlyIndexController::class)->periode();
         // $test = app(YearlyHistoryController::class)->index('2021-01-01');
