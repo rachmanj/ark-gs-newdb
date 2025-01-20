@@ -37,12 +37,11 @@ class GrpoExport implements FromCollection, WithHeadings
     }
 
     public function collection()
-    {   
+    {
         $date = Carbon::now();
         $projects = [
-            '011C', 
-            '017C', 
-            '021C', 
+            '017C',
+            '021C',
             '022C',
             '023C',
             'APS'
@@ -54,7 +53,7 @@ class GrpoExport implements FromCollection, WithHeadings
 
     public function grpo_amount($date, $projects)
     {
-        $incl_deptcode = ['40', '50', '60', '140'];
+        $incl_deptcode = ['40', '50', '60', '140', '200'];
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
         foreach ($excl_itemcode as $e) {
             $excl_itemcode_arr[] = ['item_code', 'not like', $e];

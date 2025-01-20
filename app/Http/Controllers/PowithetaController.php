@@ -10,7 +10,6 @@ use App\Models\Powitheta;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
-use PhpParser\Node\Expr\AssignOp\Pow;
 
 class PowithetaController extends Controller
 {
@@ -114,7 +113,7 @@ class PowithetaController extends Controller
         $date = Carbon::now();
 
         $projects = ['011C', '017C', '021C', '022C', '023C', 'APS'];
-        $incl_deptcode = ['40', '50', '60', '140'];
+        $incl_deptcode = ['40', '50', '60', '140', '200'];
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
         foreach ($excl_itemcode as $e) {
             $excl_itemcode_arr[] = ['item_code', 'not like', $e];
@@ -151,7 +150,7 @@ class PowithetaController extends Controller
         $date = Carbon::now();
 
         $projects = ['011C', '017C', '021C', '022C', '023C', 'APS'];
-        $incl_deptcode = ['40', '50', '60', '140'];
+        $incl_deptcode = ['40', '50', '60', '140', '200'];
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
         foreach ($excl_itemcode as $e) {
             $excl_itemcode_arr[] = ['item_code', 'not like', $e];
