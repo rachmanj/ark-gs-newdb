@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Exports\PowithetaExport;
 use App\Exports\PowithetaExportThisYear;
 use App\Imports\PowithetaImport;
-use App\Imports\PowithetaImportOlddb;
 use App\Models\Powitheta;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -92,7 +91,7 @@ class PowithetaController extends Controller
         $file->move('file_upload', $nama_file);
 
         // import data
-        Excel::import(new PowithetaImportOlddb, public_path('/file_upload/' . $nama_file));
+        Excel::import(new PowithetaImport, public_path('/file_upload/' . $nama_file));
 
         // alihkan halaman kembali
         return redirect()->route('powitheta.index')->with('success', 'Data Excel Old DB Berhasil Diimport!');
