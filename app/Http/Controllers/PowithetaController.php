@@ -15,7 +15,7 @@ class PowithetaController extends Controller
     public function index()
     {
         // $is_data = Powitheta::exists() ? 1 : 0;
-        $is_data = Powitheta::where('batch', 1)->exists() ? 1 : 0;
+        $is_data = Powitheta::exists() ? 1 : 0;
 
         return view('powitheta.index', compact('is_data'));
     }
