@@ -9,14 +9,17 @@ use App\Models\Powitheta;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Supplier;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderItem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PowithetaController extends Controller
 {
     public function index()
     {
-        // $is_data = Powitheta::exists() ? 1 : 0;
-        $is_data = Powitheta::exists() ? 1 : 0;
-
+        $is_data = Powitheta::count() > 0 ? 1 : 0;
         return view('powitheta.index', compact('is_data'));
     }
 
@@ -65,7 +68,8 @@ class PowithetaController extends Controller
         $nama_file = rand() . $file->getClientOriginalName();
 
         // upload ke folder file_upload
-        $file->move('public/file_upload', $nama_file);
+        // $file->move('public/file_upload', $nama_file);
+        $file->move('file_upload', $nama_file);
 
         // import data
         Excel::import(new PowithetaImport, public_path('/file_upload/' . $nama_file));
@@ -148,7 +152,7 @@ class PowithetaController extends Controller
     {
         $date = Carbon::now();
 
-        $projects = ['011C', '017C', '021C', '022C', '023C', 'APS'];
+        $projects = ['011C', '017C', '022C', '023C', 'APS'];
         $incl_deptcode = ['40', '50', '60', '140', '200'];
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%']; // , 
         foreach ($excl_itemcode as $e) {
@@ -202,5 +206,135 @@ class PowithetaController extends Controller
             // 'compare_count' => count($compare),
             'compare' => $compare,
         ];
+    }
+
+    public function convert_to_po()
+    {
+        try {
+            // Get all unique PO records grouped by PO number
+            $poGroups = Powitheta::select(
+                'po_no',
+                'posting_date',
+                'create_date',
+                'po_delivery_date',
+                'vendor_code',
+                'vendor_name',
+                'po_currency',
+                'project_code',
+                'dept_code',
+                'po_status',
+                'unit_no',
+                'pr_no',
+                'po_eta',
+                'po_delivery_status',
+                'budget_type'
+            )
+                ->distinct('po_no')
+                ->get();
+
+            if ($poGroups->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data to convert'
+                ]);
+            }
+
+            $importedCount = 0;
+            $createdSuppliers = 0;
+
+            // Disable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+            foreach ($poGroups as $poGroup) {
+                // Find or create supplier
+                $supplier = Supplier::firstOrCreate(
+                    ['code' => $poGroup->vendor_code],
+                    ['name' => $poGroup->vendor_name]
+                );
+
+                if ($supplier->wasRecentlyCreated) {
+                    $createdSuppliers++;
+                }
+
+                // Calculate total PO price
+                $totalPoPrice = Powitheta::where('po_no', $poGroup->po_no)
+                    ->sum('item_amount');
+
+                // Create Purchase Order
+                $purchaseOrder = PurchaseOrder::create([
+                    'doc_num' => $poGroup->po_no,
+                    'doc_date' => $poGroup->posting_date,
+                    'create_date' => $poGroup->create_date,
+                    'po_delivery_date' => $poGroup->po_delivery_date,
+                    'supplier_id' => $supplier->id,
+                    'po_currency' => $poGroup->po_currency,
+                    'total_po_price' => $totalPoPrice,
+                    'po_with_vat' => $totalPoPrice,
+                    'project_code' => $poGroup->project_code,
+                    'dept_code' => $poGroup->dept_code,
+                    'po_status' => $poGroup->po_status,
+                    'unit_no' => $poGroup->unit_no,
+                    'pr_no' => $poGroup->pr_no,
+                    'po_eta' => $poGroup->po_eta,
+                    'budget_type' => $poGroup->budget_type,
+                    'po_delivery_status' => $poGroup->po_delivery_status
+                ]);
+
+                // Get and create items for this PO
+                $poItems = Powitheta::where('po_no', $poGroup->po_no)
+                    ->select([
+                        'item_code',
+                        'description',
+                        'qty',
+                        'uom',
+                        'unit_price',
+                        'item_amount'
+                    ])
+                    ->get();
+
+                foreach ($poItems as $item) {
+                    PurchaseOrderItem::create([
+                        'purchase_order_id' => $purchaseOrder->id,
+                        'item_code' => $item->item_code,
+                        'description' => $item->description,
+                        'qty' => $item->qty,
+                        'uom' => $item->uom,
+                        'unit_price' => $item->unit_price,
+                        'item_amount' => $item->item_amount,
+                    ]);
+                }
+
+                $importedCount++;
+            }
+
+            // Re-enable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully converted {$importedCount} Purchase Orders" . 
+                            ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : "")
+            ]);
+
+        } catch (\Exception $e) {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            return response()->json([
+                'success' => false,
+                'message' => 'Error converting data: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function get_progress()
+    {
+        try {
+            $progress = intval(file_get_contents(storage_path('app/po_conversion_progress.txt')));
+        } catch (\Exception $e) {
+            $progress = 0;
+        }
+        
+        return response()->json([
+            'progress' => $progress
+        ]);
     }
 }

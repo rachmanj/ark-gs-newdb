@@ -19,7 +19,9 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\SummaryController;
+use App\Http\Controllers\POController;
 use Illuminate\Support\Facades\Route;
+
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -68,9 +70,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/other-test', [DashboardOtherController::class, 'test'])->name('other.test');
 
         Route::get('/summary-by-unit', [SummaryController::class, 'index'])->name('summary-by-unit');
+        Route::get('/search-po', [POController::class, 'search_po'])->name('search.po');
+        Route::post('/search-po', [POController::class, 'search_po_results'])->name('search.po.results');
+        Route::get('/search-po/{id}', [POController::class, 'show'])->name('search.po.show');
     });
 
+
     Route::prefix('powitheta')->name('powitheta.')->group(function () {
+        Route::get('/convert-to-po', [PowithetaController::class, 'convert_to_po'])->name('convert_to_po');
         Route::get('/export_this_month', [PowithetaController::class, 'export_this_month'])->name('export_this_month');
         Route::get('/export_this_year', [PowithetaController::class, 'export_this_year'])->name('export_this_year');
         Route::get('/data', [PowithetaController::class, 'data'])->name('data');
@@ -81,7 +88,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [PowithetaController::class, 'show'])->name('show');
         Route::post('/import_excel', [PowithetaController::class, 'import_excel'])->name('import_excel');
         Route::post('/import_oldDB', [PowithetaController::class, 'import_oldDB'])->name('import_oldDB');
+        Route::get('/progress', [PowithetaController::class, 'get_progress'])->name('progress');
     });
+
 
     Route::prefix('grpo')->name('grpo.')->group(function () {
         Route::get('/export_this_month', [GrpoController::class, 'export_this_month'])->name('export_this_month');

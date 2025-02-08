@@ -5,11 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Powitheta extends Model
+class PurchaseOrderItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'powithetas';
-
     protected $guarded = [];
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+    
 }

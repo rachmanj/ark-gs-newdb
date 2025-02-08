@@ -18,14 +18,14 @@
             </div>
 
             {{-- <hr> --}}
-
             <div class="row">
-                <div class="col-12">
-                    <div class="mb-3">
-                        <a href="{{ route('dashboard.summary-by-unit') }}" class="btn btn-sm btn-outline-info">
-                            <i class="fas fa-chart-bar mr-1"></i> View Summary by Unit
-                        </a>
-                    </div>
+                <div class="col-12 mb-3">
+                    <a href="{{ route('dashboard.summary-by-unit') }}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-chart-bar mr-1"></i> View Summary by Unit
+                    </a>
+                    <a href="{{ route('dashboard.search.po') }}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-chart-bar mr-1"></i> Search PO
+                    </a>
                 </div>
             </div>
 

@@ -19,6 +19,8 @@ class CreatePowithetasTable extends Migration
             $table->date('create_date')->nullable();
             $table->date('posting_date')->nullable();
             $table->string('vendor_code')->nullable();
+            $table->string('vendor_name')->nullable();
+            $table->string('pr_no')->nullable();
             $table->string('item_code')->nullable();
             $table->string('description')->nullable();
             $table->string('uom')->nullable();
@@ -37,6 +39,7 @@ class CreatePowithetasTable extends Migration
             $table->date('po_eta')->nullable();
             $table->text('remarks')->nullable();
             $table->string('budget_type')->nullable();
+            $table->integer('batch')->default(0);
             $table->timestamps();
         });
     }

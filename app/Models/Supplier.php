@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Powitheta extends Model
+class Supplier extends Model
 {
     use HasFactory;
 
-    protected $table = 'powithetas';
-
     protected $guarded = [];
+
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
 }
