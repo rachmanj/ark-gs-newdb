@@ -37,9 +37,9 @@ class PowithetaController extends Controller
 
     public function truncate()
     {
-        Powitheta::truncate();
-        PurchaseOrder::truncate();
         PurchaseOrderItem::truncate();
+        PurchaseOrder::truncate();
+        Powitheta::truncate();
         // Powitheta::where('batch', 1)->delete();
 
         return redirect()->route('powitheta.index')->with('success', 'Data has been truncated.');
