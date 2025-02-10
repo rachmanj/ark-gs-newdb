@@ -37,12 +37,25 @@ class PowithetaController extends Controller
 
     public function truncate()
     {
-        PurchaseOrderItem::truncate();
-        PurchaseOrder::truncate();
-        Powitheta::truncate();
-        // Powitheta::where('batch', 1)->delete();
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
-        return redirect()->route('powitheta.index')->with('success', 'Data has been truncated.');
+        try {
+            // Truncate tables in correct order
+            PurchaseOrderItem::truncate();
+            PurchaseOrder::truncate();
+            Powitheta::truncate();
+
+            // Re-enable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+            return redirect()->route('powitheta.index')->with('success', 'Data has been truncated.');
+        } catch (\Exception $e) {
+            // Make sure to re-enable foreign key checks even if an error occurs
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            
+            return redirect()->route('powitheta.index')->with('error', 'Error truncating data: ' . $e->getMessage());
+        }
     }
 
     public function clean_olddb()
