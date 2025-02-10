@@ -68,8 +68,8 @@ class PowithetaController extends Controller
         $nama_file = rand() . $file->getClientOriginalName();
 
         // upload ke folder file_upload
-        // $file->move('public/file_upload', $nama_file);
-        $file->move('file_upload', $nama_file);
+        $file->move('public/file_upload', $nama_file);
+        // $file->move('file_upload', $nama_file);
 
         // import data
         Excel::import(new PowithetaImport, public_path('/file_upload/' . $nama_file));
