@@ -15,7 +15,9 @@ class POController extends Controller
         // Get distinct values for dropdowns
         $suppliers = Supplier::pluck('name', 'id');
         $project_codes = PurchaseOrder::distinct()->pluck('project_code');
-        $unit_nos = PurchaseOrder::distinct()->pluck('unit_no');
+        $unit_nos = PurchaseOrder::distinct()
+            ->whereNotIn('unit_no', ['NON UNIT', 'NON_UNIT', 'NONUNIT', 'NON _UNIT'])
+            ->pluck('unit_no');
 
         return view('dashboard.daily.search_po', compact('suppliers', 'project_codes', 'unit_nos'));
     }
