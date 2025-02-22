@@ -142,4 +142,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/test', [TestController::class, 'index'])->name('index');
 
     Route::get('/unit-summary-table', [SummaryController::class, 'showSummaryTable']);
+
+    Route::get('/summary/export', [SummaryController::class, 'exportExcel'])->name('summary.export');
+
+    Route::get('/summary/export-pdf', [SummaryController::class, 'exportPdf'])->name('summary.export.pdf');
 });

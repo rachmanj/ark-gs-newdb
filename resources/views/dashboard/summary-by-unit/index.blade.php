@@ -11,6 +11,16 @@
 @section('content')
     <div class="content">
         <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <a href="{{ route('summary.export') }}" class="btn btn-success btn-sm mr-2">
+                        <i class="fas fa-file-excel mr-2"></i>Export to Excel
+                    </a>
+                    <a href="{{ route('summary.export.pdf') }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-pdf mr-2"></i>Export to PDF
+                    </a>
+                </div>
+            </div>
 
             <div class="row">
                 <div class="col-12">

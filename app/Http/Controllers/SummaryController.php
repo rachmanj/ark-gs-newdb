@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\Powitheta;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Exports\SummaryExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\View;
 
 class SummaryController extends Controller
 {
@@ -127,5 +131,52 @@ class SummaryController extends Controller
             'unitNumbers' => $unitNumbers,
             'yearly_totals' => $summaryData['yearly_totals']
         ]);
+    }
+
+    public function exportExcel()
+    {
+        $summaryData = $this->getUnitSummary();
+
+        // Get unique unit numbers across all months
+        $unitNumbers = collect();
+        foreach ($summaryData['months'] as $month) {
+            foreach ($month['units'] as $unit) {
+                $unitNumbers->push($unit['unit_no']);
+            }
+        }
+        $unitNumbers = $unitNumbers->unique()->sort()->values();
+
+        $fileName = 'summary_report_' . date('Y-m-d') . '.xlsx';
+        
+        return Excel::download(
+            new SummaryExport(
+                $summaryData['months'], 
+                $unitNumbers, 
+                $summaryData['yearly_totals']
+            ), 
+            $fileName
+        );
+    }
+
+    public function exportPdf()
+    {
+        $summaryData = $this->getUnitSummary();
+
+        // Get unique unit numbers across all months
+        $unitNumbers = collect();
+        foreach ($summaryData['months'] as $month) {
+            foreach ($month['units'] as $unit) {
+                $unitNumbers->push($unit['unit_no']);
+            }
+        }
+        $unitNumbers = $unitNumbers->unique()->sort()->values();
+
+        $pdf = PDF::loadView('exports.summary_pdf', [
+            'months' => $summaryData['months'],
+            'unitNumbers' => $unitNumbers,
+            'yearly_totals' => $summaryData['yearly_totals']
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('summary_report_' . date('Y-m-d') . '.pdf');
     }
 }
