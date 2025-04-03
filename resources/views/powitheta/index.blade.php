@@ -19,6 +19,12 @@
                             {{ Session::get('success') }}
                         </div>
                     @endif
+                    @if (Session::has('error'))
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ Session::get('error') }}
+                        </div>
+                    @endif
                     <a href="#"><b>THIS MONTH </b></a> |
                     <a href="{{ route('powitheta.index_this_year') }}">This Year</a> |
                     <a href="{{ route('dashboard.search.po') }}">Search PO</a>
@@ -43,6 +49,10 @@
                         class="btn btn-sm btn-info float-right {{ $is_data === 1 ? '' : 'disabled' }}">
                         <i class="fas fa-save"></i> Export to Excel
                     </a>
+                    {{-- <a href="{{ route('powitheta.export_summary') }}"
+                        class="btn btn-sm btn-primary float-right mx-2 {{ $is_data === 1 ? '' : 'disabled' }}">
+                        <i class="fas fa-chart-bar"></i> Monthly Summary
+                    </a> --}}
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered table-striped" id="powitheta">
@@ -85,7 +95,7 @@
                     </div>
                     <div class="modal-footer justify-content-between">
                         <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary" onclick="submitImport(event)">Upload</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="submitImport(event)">Upload</button>
                     </div>
                 </form>
             </div>
@@ -255,7 +265,22 @@
         function submitImport(event) {
             event.preventDefault();
 
-            // Show loading state
+            // Get the form
+            const form = document.getElementById('importForm');
+            const formData = new FormData(form);
+
+            // Validate file input
+            const fileInput = form.querySelector('input[name="file_upload"]');
+            if (!fileInput.files.length) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Please select a file to upload.',
+                });
+                return;
+            }
+
+            // Show loading state for import
             Swal.fire({
                 title: 'Importing...',
                 html: 'Please wait while we import your data',
@@ -267,8 +292,68 @@
                 }
             });
 
-            // Submit the form
-            document.getElementById('importForm').submit();
+            // Submit the form with AJAX
+            $.ajax({
+                url: form.action,
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    if (response.success) {
+                        // First show import success
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Import Successful!',
+                            text: response.import_message,
+                            confirmButtonText: 'Continue',
+                            allowOutsideClick: false,
+                            footer: response.file_cleaned ? 'Temporary file has been cleaned up' : ''
+                        }).then(() => {
+                            // Then show conversion result
+                            if (response.convert_success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Conversion Complete!',
+                                    text: response.convert_message,
+                                }).then(() => {
+                                    // Close modal and refresh page
+                                    $('#modal-upload_newdb').modal('hide');
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Import Success, Conversion Failed',
+                                    text: response.convert_message,
+                                }).then(() => {
+                                    // Close modal and refresh page
+                                    $('#modal-upload_newdb').modal('hide');
+                                    window.location.reload();
+                                });
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message,
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred during upload.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage,
+                    });
+                }
+            });
         }
     </script>
 @endsection

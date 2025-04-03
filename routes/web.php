@@ -80,6 +80,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/convert-to-po', [PowithetaController::class, 'convert_to_po'])->name('convert_to_po');
         Route::get('/export_this_month', [PowithetaController::class, 'export_this_month'])->name('export_this_month');
         Route::get('/export_this_year', [PowithetaController::class, 'export_this_year'])->name('export_this_year');
+        Route::get('/export_summary', [PowithetaController::class, 'export_summary'])->name('export_summary');
         Route::get('/data', [PowithetaController::class, 'data'])->name('data');
         Route::get('/data/this_year', [PowithetaController::class, 'data_this_year'])->name('data.this_year');
         Route::get('/', [PowithetaController::class, 'index'])->name('index');

@@ -54,15 +54,37 @@ class IncomingController extends Controller
         // membuat nama file unik
         $nama_file = rand() . $file->getClientOriginalName();
 
+        // Create directory if it doesn't exist
+        $uploadPath = public_path('file_upload');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0777, true);
+        }
+
         // upload ke folder file_upload
-        // $file->move('public/file_upload', $nama_file);
-        $file->move(public_path('file_upload'), $nama_file);
+        $file->move($uploadPath, $nama_file);
 
-        // import data
-        Excel::import(new IncomingImport, public_path('/file_upload/' . $nama_file));
+        // Full path to the uploaded file
+        $filePath = $uploadPath . '/' . $nama_file;
 
-        // alihkan halaman kembali
-        return redirect()->route('incoming.index')->with('success', 'Data Excel Berhasil Diimport!');
+        try {
+            // import data
+            Excel::import(new IncomingImport, $filePath);
+            
+            // Delete the temporary file after successful import
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+
+            // alihkan halaman kembali
+            return redirect()->route('incoming.index')->with('success', 'Data Excel Berhasil Diimport dan File Temporary Dihapus!');
+        } catch (\Exception $e) {
+            // Delete the file even if import fails
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            return redirect()->route('incoming.index')->with('error', 'Error saat import: ' . $e->getMessage());
+        }
     }
 
     public function export_this_month()

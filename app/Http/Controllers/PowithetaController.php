@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\PowithetaExport;
 use App\Exports\PowithetaExportThisYear;
+use App\Exports\PowithetaSummaryExport;
 use App\Imports\PowithetaImport;
 use App\Models\Powitheta;
 use Carbon\Carbon;
@@ -71,30 +72,80 @@ class PowithetaController extends Controller
 
     public function import_excel(Request $request)
     {
+        // Increase max execution time for large imports
+        ini_set('max_execution_time', 300); // 5 minutes
+        
         // validasi
         $this->validate($request, [
             'file_upload' => 'required|mimes:xls,xlsx'
         ]);
 
-        // menangkap file excel
-        $file = $request->file('file_upload');
+        try {
+            // menangkap file excel
+            $file = $request->file('file_upload');
 
-        // membuat nama file unik
-        $nama_file = rand() . $file->getClientOriginalName();
+            // membuat nama file unik
+            $nama_file = rand() . $file->getClientOriginalName();
 
-        // upload ke folder file_upload
-        $file->move('public/file_upload', $nama_file);
-        // $file->move('file_upload', $nama_file);
+            // Create directory if it doesn't exist
+            $uploadPath = public_path('file_upload');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
 
-        // import data
-        Excel::import(new PowithetaImport, public_path('/file_upload/' . $nama_file));
+            // upload ke folder file_upload
+            $file->move($uploadPath, $nama_file);
 
-        // alihkan halaman kembali
-        return redirect()->route('powitheta.index')->with('success', 'Data Excel Berhasil Diimport!');
+            // Full path to the uploaded file
+            $filePath = $uploadPath . '/' . $nama_file;
+
+            // Check if file exists before importing
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Upload failed: File does not exist at ' . $filePath
+                ]);
+            }
+
+            // import data
+            Excel::import(new PowithetaImport, $filePath);
+            
+            // Call convert_to_po method to process the imported data
+            $convertResult = $this->performConvertToPo();
+            
+            // Delete the file after successful import and conversion
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'import_message' => 'Data Excel Berhasil Diimport!',
+                'convert_success' => $convertResult['success'],
+                'convert_message' => $convertResult['message'],
+                'file_cleaned' => true
+            ]);
+            
+        } catch (\Exception $e) {
+            // Try to clean up the file even if there was an error
+            $filePath = isset($filePath) ? $filePath : null;
+            if ($filePath && file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error during import: ' . $e->getMessage(),
+                'file_cleaned' => isset($filePath)
+            ]);
+        }
     }
 
     public function import_oldDB(Request $request)
     {
+        // Increase max execution time for large imports
+        ini_set('max_execution_time', 300); // 5 minutes
+        
         // validasi
         $this->validate($request, [
             'file_upload' => 'required|mimes:xls,xlsx'
@@ -106,11 +157,25 @@ class PowithetaController extends Controller
         // membuat nama file unik
         $nama_file = rand() . $file->getClientOriginalName();
 
+        // Create directory if it doesn't exist
+        $uploadPath = public_path('file_upload');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0777, true);
+        }
+
         // upload ke folder file_upload
-        $file->move('public/file_upload', $nama_file);
+        $file->move($uploadPath, $nama_file);
+
+        // Full path to the uploaded file
+        $filePath = $uploadPath . '/' . $nama_file;
+
+        // Check if file exists before importing
+        if (!file_exists($filePath)) {
+            return redirect()->route('powitheta.index')->with('error', 'Upload failed: File does not exist at ' . $filePath);
+        }
 
         // import data
-        Excel::import(new PowithetaImport, public_path('/file_upload/' . $nama_file));
+        Excel::import(new PowithetaImport, $filePath);
 
         // alihkan halaman kembali
         return redirect()->route('powitheta.index')->with('success', 'Data Excel Old DB Berhasil Diimport!');
@@ -124,6 +189,11 @@ class PowithetaController extends Controller
     public function export_this_year()
     {
         return Excel::download(new PowithetaExportThisYear(), 'powitheta_this_year.xlsx');
+    }
+
+    public function export_summary()
+    {
+        return Excel::download(new PowithetaSummaryExport(), 'powitheta_monthly_summary.xlsx');
     }
 
     public function data()  //this month data
@@ -225,7 +295,30 @@ class PowithetaController extends Controller
 
     public function convert_to_po()
     {
+        $result = $this->performConvertToPo();
+        return response()->json($result);
+    }
+
+    public function get_progress()
+    {
         try {
+            $progress = intval(file_get_contents(storage_path('app/po_conversion_progress.txt')));
+        } catch (\Exception $e) {
+            $progress = 0;
+        }
+        
+        return response()->json([
+            'progress' => $progress
+        ]);
+    }
+
+    // Helper method to perform the conversion
+    private function performConvertToPo()
+    {
+        try {
+            // Increase max execution time for large conversion operations
+            ini_set('max_execution_time', 300); // 5 minutes
+            
             // Get all unique PO records grouped by PO number
             $poGroups = Powitheta::select(
                 'po_no',
@@ -248,10 +341,10 @@ class PowithetaController extends Controller
                 ->get();
 
             if ($poGroups->isEmpty()) {
-                return response()->json([
+                return [
                     'success' => false,
                     'message' => 'No data to convert'
-                ]);
+                ];
             }
 
             $importedCount = 0;
@@ -325,31 +418,18 @@ class PowithetaController extends Controller
             // Re-enable foreign key checks
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
-            return response()->json([
+            return [
                 'success' => true,
                 'message' => "Successfully converted {$importedCount} Purchase Orders" . 
                             ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : "")
-            ]);
+            ];
 
         } catch (\Exception $e) {
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
-            return response()->json([
+            return [
                 'success' => false,
                 'message' => 'Error converting data: ' . $e->getMessage()
-            ]);
+            ];
         }
-    }
-
-    public function get_progress()
-    {
-        try {
-            $progress = intval(file_get_contents(storage_path('app/po_conversion_progress.txt')));
-        } catch (\Exception $e) {
-            $progress = 0;
-        }
-        
-        return response()->json([
-            'progress' => $progress
-        ]);
     }
 }

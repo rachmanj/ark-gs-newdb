@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class CapexController extends Controller
 {
-    public $include_projects = ['017C', '021C', '022C', '023C', 'APS'];
+    public $include_projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
 
     public function index()
     {

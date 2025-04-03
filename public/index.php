@@ -1,5 +1,9 @@
 <?php
 
+// Increase max execution time for large operations
+ini_set('max_execution_time', 300); // 5 minutes
+ini_set('memory_limit', '512M');    // Increase memory limit too
+
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 

@@ -11,7 +11,7 @@ class HistoryController extends Controller
 {
     public function index()
     {
-        $projects = ['017C', '021C', '022C', '023C', 'APS'];
+        $projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
 
         return view('history.index', compact('projects'));
     }
@@ -35,7 +35,7 @@ class HistoryController extends Controller
     {
         $history = History::findOrFail($id);
         // $projects = Http::get('http://localhost:5000/projects')->json()['data'];
-        $projects = ['011C', '017C', '021C', '022C', '023C', 'APS'];
+        $projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
 
         return view('history.edit', compact('history', 'projects'));
     }

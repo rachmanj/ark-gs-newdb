@@ -5,8 +5,14 @@ namespace App\Imports;
 use App\Models\Powitheta;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 
-class PowithetaImport implements ToModel, WithHeadingRow
+class PowithetaImport implements 
+    ToModel, 
+    WithHeadingRow, 
+    WithChunkReading, 
+    WithBatchInserts
 {
     /**
      * @param array $row
@@ -54,5 +60,21 @@ class PowithetaImport implements ToModel, WithHeadingRow
         } else {
             return null;
         }
+    }
+
+    /**
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+    
+    /**
+     * @return int
+     */
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 }

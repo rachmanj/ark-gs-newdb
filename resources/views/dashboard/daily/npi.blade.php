@@ -15,8 +15,24 @@
                 </thead>
                 <tbody>
                     @foreach ($npi_daily['npi'] as $item)
+                        @php
+                            if ($item['percentage'] < 1) {
+                                $color = 'success';
+                            } elseif ($item['percentage'] <= 1.1) {
+                                $color = 'warning';
+                            } else {
+                                $color = 'danger';
+                            }
+                        @endphp
                         <tr>
-                            <td>{{ $item['project'] }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="mr-2 text-{{ $color }}">
+                                        <i class="fas fa-circle fa-xs"></i>
+                                    </span>
+                                    <span>{{ $item['project'] }}</span>
+                                </div>
+                            </td>
                             <td class="text-right">
                                 {{ number_format($item['incoming_qty'], 0) }}
                             </td>
@@ -24,15 +40,30 @@
                                 {{ number_format($item['outgoing_qty'], 0) }}
                             </td>
                             <td class="text-right">
-                                {{ number_format($item['percentage'], 2) }}
+                                <span class="badge badge-{{ $color }} badge-pill">
+                                    {{ number_format($item['percentage'], 2) }}
+                                </span>
                             </td>
                         </tr>
                     @endforeach
-                    <tr>
+                    @php
+                        if ($npi_daily['total_percentage'] < 1) {
+                            $totalColor = 'success';
+                        } elseif ($npi_daily['total_percentage'] <= 1.1) {
+                            $totalColor = 'warning';
+                        } else {
+                            $totalColor = 'danger';
+                        }
+                    @endphp
+                    <tr class="font-weight-bold bg-light">
                         <th>Total</th>
                         <th class="text-right">{{ number_format($npi_daily['total_incoming_qty'], 0) }}</th>
                         <th class="text-right">{{ number_format($npi_daily['total_outgoing_qty'], 0) }}</th>
-                        <th class="text-right">{{ number_format($npi_daily['total_percentage'], 2) }}</th>
+                        <th class="text-right">
+                            <span class="badge badge-{{ $totalColor }} badge-pill">
+                                {{ number_format($npi_daily['total_percentage'], 2) }}
+                            </span>
+                        </th>
                     </tr>
                 </tbody>
             </table>
