@@ -82,8 +82,13 @@
                                 <a href="{{ route('dashboard.summary-by-unit') }}" class="btn btn-primary btn-sm mr-2 mb-2">
                                     <i class="fas fa-chart-bar mr-1"></i> View Summary by Unit
                                 </a>
-                                <a href="{{ route('dashboard.search.po') }}" class="btn btn-info btn-sm mb-2">
+                                <a href="{{ route('dashboard.search.po') }}" class="btn btn-info btn-sm mr-2 mb-2">
                                     <i class="fas fa-search mr-1"></i> Search PO
+                                </a>
+                                <a href="{{ route('dashboard.item.price.history') }}"
+                                    class="btn btn-success btn-sm mr-2 mb-2">
+                                    <i class="fas fa-history mr-1"></i> Search Item Price History
+                                    <span class="badge badge-danger ml-1">New</span>
                                 </a>
                             </div>
                         </div>

@@ -73,6 +73,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/search-po', [POController::class, 'search_po'])->name('search.po');
         Route::post('/search-po', [POController::class, 'search_po_results'])->name('search.po.results');
         Route::get('/search-po/{id}', [POController::class, 'show'])->name('search.po.show');
+
+        // Item price history routes
+        Route::get('/item-price-history', [POController::class, 'item_price_history'])->name('item.price.history');
+        Route::post('/item-price-history', [POController::class, 'item_price_history_results'])->name('item.price.history.results');
     });
 
 
