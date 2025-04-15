@@ -139,6 +139,6 @@ class UserController extends Controller
         $user->password = Hash::make($request->password);
         $user->save();
 
-        return redirect()->route('home')->with('success', 'User password updated successfully');
+        return redirect()->route('dashboard.daily.index')->with('success', 'User password updated successfully');
     }
 }

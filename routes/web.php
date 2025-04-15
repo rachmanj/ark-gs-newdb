@@ -8,7 +8,6 @@ use App\Http\Controllers\DashboardOtherController;
 use App\Http\Controllers\DashboardYearlyController;
 use App\Http\Controllers\GrpoController;
 use App\Http\Controllers\HistoryController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IncomingController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MigiController;
@@ -32,7 +31,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    // Redirect root to dashboard daily
+    Route::get('/', function () {
+        return redirect()->route('dashboard.daily.index');
+    });
+
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::prefix('users')->name('users.')->group(function () {
