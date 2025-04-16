@@ -29,11 +29,15 @@ class CoalPriceController extends Controller
             // Get Newcastle Coal Price Data
             $newcastleCoalPrice = $this->getNewcastleCoalPrice();
 
+            // Get USD/IDR exchange rate
+            $exchangeRate = $this->getExchangeRate();
+
             $responseData = [
                 'status' => 'success',
                 'data' => [
                     'indonesia' => $indonesiaCoalPrice,
-                    'newcastle' => $newcastleCoalPrice
+                    'newcastle' => $newcastleCoalPrice,
+                    'exchange_rate' => $exchangeRate
                 ]
             ];
 
@@ -175,5 +179,38 @@ class CoalPriceController extends Controller
             'date' => date('Y-m-d'),
             'source' => 'Estimated (based on recent API 5 index)'
         ];
+    }
+
+    /**
+     * Get USD/IDR exchange rate
+     */
+    protected function getExchangeRate()
+    {
+        try {
+            $response = Http::get('https://api.exchangerate-api.com/v4/latest/USD');
+            
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data['rates']['IDR'])) {
+                    return [
+                        'rate' => $data['rates']['IDR'],
+                        'date' => $data['date'],
+                        'last_updated' => $data['time_last_updated']
+                    ];
+                }
+            }
+            
+            return [
+                'rate' => 16824.06, // Fallback rate
+                'date' => date('Y-m-d'),
+                'last_updated' => time()
+            ];
+        } catch (\Exception $e) {
+            return [
+                'rate' => 16824.06, // Fallback rate
+                'date' => date('Y-m-d'),
+                'last_updated' => time()
+            ];
+        }
     }
 }

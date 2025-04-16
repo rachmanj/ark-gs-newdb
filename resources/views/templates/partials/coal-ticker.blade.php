@@ -1,7 +1,7 @@
 <div class="coal-ticker-container">
     <div class="coal-ticker">
         <div class="ticker-content">
-            <span class="loading-text">Loading coal price data...</span>
+            <span class="loading-text">Loading coal price and currency data...</span>
         </div>
     </div>
 </div>
@@ -32,7 +32,7 @@
 
     .ticker-content {
         display: inline-block;
-        animation: ticker 30s linear infinite;
+        animation: ticker 60s linear infinite;
         padding-left: 100%;
     }
 
@@ -58,6 +58,15 @@
         font-size: 0.85em;
         font-style: italic;
         margin-left: 5px;
+    }
+
+    .currency-item {
+        display: inline-block;
+        padding: 0 15px;
+    }
+
+    .currency-rate {
+        font-weight: bold;
     }
 
     @keyframes ticker {
@@ -100,7 +109,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         fetchCoalPrices();
-        // Refresh coal prices every 5 minutes
+        // Refresh data every 5 minutes
         setInterval(fetchCoalPrices, 5 * 60 * 1000);
     });
 
@@ -122,6 +131,7 @@
     function updateTickerContent(data) {
         const indonesiaData = data.indonesia;
         const newcastleData = data.newcastle;
+        const exchangeRate = data.exchange_rate;
 
         const tickerContent = document.querySelector('.ticker-content');
 
@@ -158,6 +168,14 @@
 
         content += `</div>`;
 
+        // Add USD/IDR exchange rate
+        if (exchangeRate) {
+            const formattedRate = exchangeRate.rate.toLocaleString('id-ID');
+            const updateDateTime = formatDateTimeToWIB(exchangeRate.last_updated);
+            content +=
+                `<div class="currency-item">Current Exchange Rate: 1 USD = <span class="currency-rate">IDR ${formattedRate}</span> (Source: exchangerate-api.com) | Last Updated: ${updateDateTime} WIB</div>`;
+        }
+
         tickerContent.innerHTML = content;
 
         // Restart animation
@@ -166,12 +184,12 @@
 
         // Set animation based on screen width
         const width = window.innerWidth;
-        let duration = '30s';
+        let duration = '60s';
 
         if (width <= 480) {
-            duration = '15s';
+            duration = '30s';
         } else if (width <= 768) {
-            duration = '20s';
+            duration = '45s';
         }
 
         tickerContent.style.animation = `ticker ${duration} linear infinite`;
@@ -197,18 +215,34 @@
         return `${day} ${month} ${year}`;
     }
 
+    // Format date and time to WIB
+    function formatDateTimeToWIB(timestamp) {
+        const date = new Date(timestamp * 1000);
+        const options = {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        return date.toLocaleString('id-ID', options);
+    }
+
     // Adjust animation speed when window is resized
     window.addEventListener('resize', function() {
         const tickerContent = document.querySelector('.ticker-content');
         if (!tickerContent) return;
 
         const width = window.innerWidth;
-        let duration = '30s';
+        let duration = '60s';
 
         if (width <= 480) {
-            duration = '15s';
+            duration = '30s';
         } else if (width <= 768) {
-            duration = '20s';
+            duration = '45s';
         }
 
         tickerContent.style.animation = 'none';
