@@ -139,6 +139,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('daily-production')->name('daily-production.')->group(function () {
         Route::get('/data', [DailyProductionController::class, 'data'])->name('data');
+        Route::get('/dashboard-data', [DailyProductionController::class, 'dashboardData'])->name('dashboard-data');
         Route::get('/', [DailyProductionController::class, 'index'])->name('index');
         Route::get('/create', [DailyProductionController::class, 'create'])->name('create');
         Route::post('/', [DailyProductionController::class, 'store'])->name('store');
