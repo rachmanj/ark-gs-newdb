@@ -19,6 +19,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\POController;
+use App\Http\Controllers\DailyProductionController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -134,6 +135,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/this_year', [IncomingController::class, 'index_this_year'])->name('index_this_year');
         Route::get('/{id}', [IncomingController::class, 'show'])->name('show');
         Route::post('/import_excel', [IncomingController::class, 'import_excel'])->name('import_excel');
+    });
+
+    Route::prefix('daily-production')->name('daily-production.')->group(function () {
+        Route::get('/data', [DailyProductionController::class, 'data'])->name('data');
+        Route::get('/', [DailyProductionController::class, 'index'])->name('index');
+        Route::get('/create', [DailyProductionController::class, 'create'])->name('create');
+        Route::post('/', [DailyProductionController::class, 'store'])->name('store');
+        Route::get('/truncate', [DailyProductionController::class, 'truncate'])->name('truncate');
+        Route::get('/import', [DailyProductionController::class, 'import'])->name('import');
+        Route::post('/import-excel', [DailyProductionController::class, 'importExcel'])->name('import-excel');
+        Route::get('/export-this-month', [DailyProductionController::class, 'exportThisMonth'])->name('export-this-month');
+        Route::get('/export-this-year', [DailyProductionController::class, 'exportThisYear'])->name('export-this-year');
+        Route::get('/download-template', [DailyProductionController::class, 'downloadTemplate'])->name('download-template');
+        Route::get('/{dailyProduction}', [DailyProductionController::class, 'show'])->name('show');
+        Route::get('/{dailyProduction}/edit', [DailyProductionController::class, 'edit'])->name('edit');
+        Route::put('/{dailyProduction}', [DailyProductionController::class, 'update'])->name('update');
+        Route::delete('/{dailyProduction}', [DailyProductionController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('budget/data', [BudgetController::class, 'data'])->name('budget.data');
