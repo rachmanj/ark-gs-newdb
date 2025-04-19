@@ -432,11 +432,11 @@
 
 @section('scripts')
     <!-- Moment.js -->
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="{{ asset('adminlte/plugins/moment/moment-2-29.js') }}"></script>
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('adminlte/plugins/chart.js/Chart-4.js') }}"></script>
     <!-- Chart.js Adapter for Moment.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+    <script src="{{ asset('adminlte/plugins/chart.js/chartjs-adapter-moment.min.js') }}"></script>
 
     <script>
         // Add animation to the progress bars after page load
@@ -642,46 +642,40 @@
                 datasets: []
             };
 
-            // Sort dates chronologically
-            const sortedDates = [...monthData.dates].sort();
+            // Generate all days in the current month
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate(); // Last day of current month
 
-            // Prepare formatted data with simpler x-axis labels (just day numbers)
-            const formattedData = {};
+            // Create array of all days in the month (1-31)
+            const allDays = Array.from({
+                length: daysInMonth
+            }, (_, i) => i + 1);
 
             // Process data for each project
             monthData.chart_data.forEach((series, index) => {
-                // Initialize the formatted series
-                formattedData[series.name] = {
-                    name: series.name,
-                    data: []
-                };
+                // Initialize data array with zeros for all days
+                const formattedData = allDays.map(day => ({
+                    x: day,
+                    y: 0
+                }));
 
-                // Convert dates to day numbers and sort chronologically
-                const dataPoints = {};
+                // Fill in actual data where available
                 series.data.forEach(point => {
                     const date = new Date(point.x);
                     const dayNumber = date.getDate();
-                    dataPoints[dayNumber] = point.y;
+                    // Find the corresponding day in our formatted data and update it
+                    const dayIndex = formattedData.findIndex(item => item.x === dayNumber);
+                    if (dayIndex !== -1) {
+                        formattedData[dayIndex].y = point.y;
+                    }
                 });
 
-                // Create sorted array of day numbers
-                const sortedDays = Object.keys(dataPoints).map(Number).sort((a, b) => a - b);
-
-                // Create data points in order
-                sortedDays.forEach(day => {
-                    formattedData[series.name].data.push({
-                        x: day,
-                        y: dataPoints[day]
-                    });
-                });
-            });
-
-            // Configure datasets in sorted order
-            Object.values(formattedData).forEach((series, index) => {
                 // Create dataset for each project
                 chartData.datasets.push({
                     label: series.name,
-                    data: series.data,
+                    data: formattedData,
                     borderColor: colorPalette[index % colorPalette.length],
                     backgroundColor: colorPalette[index % colorPalette.length].replace('1)', '0.1)'),
                     tension: 0.3,
@@ -711,6 +705,8 @@
                                     display: true,
                                     text: 'Day of Month'
                                 },
+                                min: 1,
+                                max: daysInMonth,
                                 ticks: {
                                     stepSize: 1,
                                     callback: function(value) {
