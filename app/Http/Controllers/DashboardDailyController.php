@@ -8,6 +8,7 @@ use App\Models\History;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\DailyProduction;
+use Illuminate\Http\Request;
 
 class DashboardDailyController extends Controller
 {
@@ -20,7 +21,7 @@ class DashboardDailyController extends Controller
         
         // Add daily production data
         $dailyProductionController = new DailyProductionController();
-        $dailyProduction = $dailyProductionController->dashboardData();
+        $dailyProduction = $dailyProductionController->dashboardData(new Request());
 
         return view('dashboard.daily.index', [
             'report_date' => Carbon::now()->subDay()->format('d-M-Y'),
@@ -41,7 +42,7 @@ class DashboardDailyController extends Controller
         
         // Add daily production data
         $dailyProductionController = new DailyProductionController();
-        $dailyProduction = $dailyProductionController->dashboardData();
+        $dailyProduction = $dailyProductionController->dashboardData(new Request());
 
         return [
             'capex_daily' => $capex_daily,

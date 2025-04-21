@@ -9,6 +9,7 @@ use App\Imports\DailyProductionsImport;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DailyProductionController extends Controller
 {
@@ -49,141 +50,171 @@ class DailyProductionController extends Controller
             ->make(true);
     }
 
-    public function dashboardData()
+    public function dashboardData(Request $request)
     {
-        // Current month data
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
-        
-        // Get production data by date and project for current month
-        $currentMonthProduction = DailyProduction::whereBetween('date', [$startOfMonth, $endOfMonth])
-            ->select(
-                'date',
-                'project',
-                DB::raw('COALESCE(day_shift, 0) + COALESCE(night_shift, 0) as total_production')
-            )
-            ->orderBy('date')
+        // Get month and year from request or use current
+        $month = $request->input('month', Carbon::now()->month);
+        $year = $request->input('year', Carbon::now()->year);
+
+        // Create Carbon instances for first and last day of month
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
+
+        // Get production data for current month grouped by date and project
+        $monthlyProduction = DailyProduction::whereBetween('date', [$startOfMonth, $endOfMonth])
             ->get();
+
+        // Get unique projects from the data
+        $projects = $monthlyProduction->pluck('project')->unique();
+
+        // Format data for chart
+        $chartData = [];
         
-        // Group current month data for the chart
-        $currentMonthChartData = [];
-        $currentMonthTableData = [];
-        
-        // Process data for monthly chart and table
-        foreach ($currentMonthProduction as $record) {
-            $date = $record->date->format('Y-m-d');
-            $project = $record->project;
-            
-            if (!isset($currentMonthChartData[$project])) {
-                $currentMonthChartData[$project] = [
-                    'name' => $project,
-                    'data' => []
-                ];
-            }
-            
-            // Add data point for the chart
-            $currentMonthChartData[$project]['data'][] = [
-                'x' => $date,
-                'y' => (float) $record->total_production
+        foreach ($projects as $project) {
+            $projectData = [
+                'name' => $project,
+                'data' => []
             ];
             
-            // Build table data
-            if (!isset($currentMonthTableData[$project])) {
-                $currentMonthTableData[$project] = [
-                    'name' => $project,
-                    'total' => 0,
-                    'days' => []
+            $projectRecords = $monthlyProduction->where('project', $project);
+            
+            foreach ($projectRecords as $record) {
+                // Calculate total quantity (day_shift + night_shift)
+                $totalQuantity = ($record->day_shift ?? 0) + ($record->night_shift ?? 0);
+                
+                $projectData['data'][] = [
+                    'x' => $record->date->format('Y-m-d'),
+                    'y' => $totalQuantity
                 ];
             }
             
-            $currentMonthTableData[$project]['days'][$date] = (float) $record->total_production;
-            $currentMonthTableData[$project]['total'] += (float) $record->total_production;
+            $chartData[] = $projectData;
+        }
+
+        // Get yearly production totals
+        $yearlyData = $this->getYearlyData($year);
+        
+        // Prepare dates array for table formatting
+        $dates = [];
+        foreach ($monthlyProduction as $record) {
+            $dateStr = $record->date->format('Y-m-d');
+            if (!in_array($dateStr, $dates)) {
+                $dates[] = $dateStr;
+            }
         }
         
-        // Convert to arrays for the view
-        $currentMonthChartData = array_values($currentMonthChartData);
-        $currentMonthTableData = array_values($currentMonthTableData);
-        
-        // Get unique dates for the table header
-        $currentMonthDates = $currentMonthProduction->pluck('date')
-            ->map(function($date) { return $date->format('Y-m-d'); })
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-        
-        // Yearly data by month
-        $startOfYear = now()->startOfYear();
-        $endOfYear = now()->endOfYear();
-        
-        // Get monthly production data by project for current year
+        // Prepare table data
+        $tableData = [];
+        foreach ($projects as $project) {
+            $projectTotal = 0;
+            $projectDays = [];
+            
+            $projectRecords = $monthlyProduction->where('project', $project);
+            foreach ($projectRecords as $record) {
+                $dateStr = $record->date->format('Y-m-d');
+                $totalQuantity = ($record->day_shift ?? 0) + ($record->night_shift ?? 0);
+                $projectDays[$dateStr] = $totalQuantity;
+                $projectTotal += $totalQuantity;
+            }
+            
+            $tableData[] = [
+                'name' => $project,
+                'total' => $projectTotal,
+                'days' => $projectDays
+            ];
+        }
+
+        // Return response with data in the format expected by the frontend
+        $response = [
+            'current_month' => [
+                'chart_data' => $chartData,
+                'table_data' => $tableData,
+                'dates' => $dates,
+                'selected_month' => (int) $month,
+                'selected_year' => (int) $year
+            ],
+            'yearly' => $yearlyData,
+            'selected_month' => (int) $month,
+            'selected_year' => (int) $year,
+        ];
+
+        return response()->json($response);
+    }
+
+    /**
+     * Get yearly production data organized by month
+     * 
+     * @param int $year The year to get data for
+     * @return array Monthly production data for the year
+     */
+    private function getYearlyData($year)
+    {
+        // Create date ranges for the year
+        $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfDay();
+        $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
+
+        // Get production data grouped by month and project
         $yearlyProduction = DailyProduction::whereBetween('date', [$startOfYear, $endOfYear])
             ->select(
                 DB::raw('MONTH(date) as month'),
-                DB::raw('YEAR(date) as year'),
                 'project',
-                DB::raw('SUM(COALESCE(day_shift, 0) + COALESCE(night_shift, 0)) as total_production')
+                DB::raw('SUM(day_shift + night_shift) as total_quantity')
             )
-            ->groupBy('month', 'year', 'project')
-            ->orderBy('year')
+            ->groupBy('month', 'project')
             ->orderBy('month')
             ->get();
+
+        // Get unique projects
+        $projects = $yearlyProduction->pluck('project')->unique();
         
-        // Prepare yearly data for chart
-        $yearlyChartData = [];
-        $yearlyTableData = [];
-        $months = [];
-        
-        // Create month labels
+        // Prepare month names for labels
+        $monthNames = [];
         for ($i = 1; $i <= 12; $i++) {
-            $months[] = date('M', mktime(0, 0, 0, $i, 1));
+            $monthNames[] = date('M', mktime(0, 0, 0, $i, 1));
         }
         
-        // Process data for yearly chart
-        foreach ($yearlyProduction as $record) {
-            $monthIdx = $record->month - 1; // 0-based index for months
-            $project = $record->project;
-            
-            if (!isset($yearlyChartData[$project])) {
-                $yearlyChartData[$project] = [
-                    'name' => $project,
-                    'data' => array_fill(0, 12, 0) // Initialize with zeroes for all 12 months
-                ];
-            }
-            
-            // Add monthly total to the chart data
-            $yearlyChartData[$project]['data'][$monthIdx] = (float) $record->total_production;
-            
-            // Build yearly table data
-            if (!isset($yearlyTableData[$project])) {
-                $yearlyTableData[$project] = [
-                    'name' => $project,
-                    'total' => 0,
-                    'months' => array_fill(0, 12, 0)
-                ];
-            }
-            
-            $yearlyTableData[$project]['months'][$monthIdx] = (float) $record->total_production;
-            $yearlyTableData[$project]['total'] += (float) $record->total_production;
-        }
+        // Organize data by project for chart
+        $chartData = [];
+        // Organize data for table
+        $tableData = [];
         
-        // Convert to arrays for the view
-        $yearlyChartData = array_values($yearlyChartData);
-        $yearlyTableData = array_values($yearlyTableData);
+        foreach ($projects as $project) {
+            $projectData = [
+                'name' => $project,
+                'data' => array_fill(0, 12, 0), // Initialize with zeroes for all 12 months
+            ];
+            
+            // For table data - initialize with zeroes for all 12 months
+            $projectMonths = array_values(array_fill(0, 12, 0)); // Make sure it's a zero-indexed array
+            $projectTotal = 0;
+            
+            // Fill in actual data for months that have records
+            $projectRecords = $yearlyProduction->where('project', $project);
+            
+            foreach ($projectRecords as $record) {
+                $monthIndex = $record->month - 1; // Convert from 1-based to 0-based indexing for chart
+                $projectData['data'][$monthIndex] = (float) $record->total_quantity;
+                
+                // For table data (also using 0-based month indexing)
+                $projectMonths[$monthIndex] = (float) $record->total_quantity;
+                $projectTotal += (float) $record->total_quantity;
+            }
+            
+            $chartData[] = $projectData;
+            
+            // Add to table data
+            $tableData[] = [
+                'name' => $project,
+                'total' => $projectTotal,
+                'months' => $projectMonths // Now a zero-indexed array
+            ];
+        }
         
         return [
-            'current_month' => [
-                'chart_data' => $currentMonthChartData,
-                'table_data' => $currentMonthTableData,
-                'dates' => $currentMonthDates,
-                'month_name' => now()->format('F Y')
-            ],
-            'yearly' => [
-                'chart_data' => $yearlyChartData,
-                'table_data' => $yearlyTableData,
-                'months' => $months,
-                'year' => now()->year
-            ]
+            'chart_data' => $chartData,
+            'table_data' => $tableData,
+            'months' => $monthNames,
+            'year' => $year
         ];
     }
 
