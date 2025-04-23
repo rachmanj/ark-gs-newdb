@@ -21,7 +21,8 @@ class DailyProductionController extends Controller
 
     public function data()
     {
-        $query = DailyProduction::query();
+        // Order by date descending
+        $query = DailyProduction::query()->orderBy('date', 'desc');
 
         return DataTables::of($query)
             ->addIndexColumn()

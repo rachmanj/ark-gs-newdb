@@ -33,13 +33,13 @@
                         <i class="fas fa-file-excel"></i> Import Excel
                     </a>
 
-                    @can('upload_data')
+                    {{-- @can('upload_data')
                         <a href="{{ route('daily-production.truncate') }}"
                             class="btn btn-sm btn-danger float-right {{ $is_data === 1 ? '' : 'disabled' }}"
                             onclick="return confirm('Are You sure You want to delete all records?')">
                             <i class="fas fa-trash"></i> Truncate Table
                         </a>
-                    @endcan
+                    @endcan --}}
 
                     <a href="{{ route('daily-production.export-this-month') }}"
                         class="btn btn-sm btn-info {{ $is_data === 1 ? '' : 'disabled' }}">
