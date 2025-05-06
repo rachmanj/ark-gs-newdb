@@ -20,6 +20,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\POController;
 use App\Http\Controllers\DailyProductionController;
+use App\Http\Controllers\ProductionPlanController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -173,4 +174,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/summary/export', [SummaryController::class, 'exportExcel'])->name('summary.export');
 
     Route::get('/summary/export-pdf', [SummaryController::class, 'exportPdf'])->name('summary.export.pdf');
+
+    Route::prefix('production-plan')->name('production-plan.')->group(function () {
+        Route::get('/data', [ProductionPlanController::class, 'data'])->name('data');
+        Route::get('/export', [ProductionPlanController::class, 'export'])->name('export');
+        Route::get('/{id}/edit-data', [ProductionPlanController::class, 'getForEdit'])->name('edit-data');
+    });
+    Route::resource('production-plan', ProductionPlanController::class);
 });
