@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardDailyApiController;
 use App\Http\Controllers\Api\CoalPriceController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\SummaryController;
 
 /*
@@ -25,3 +26,4 @@ Route::get('/daily/reguler', [DashboardDailyApiController::class, 'reguler_daily
 Route::get('/daily/capex', [DashboardDailyApiController::class, 'capex_daily']);
 Route::get('/unit-summary', [SummaryController::class, 'getUnitSummary']);
 Route::get('/coal-prices', [CoalPriceController::class, 'getCoalPrices']);
+Route::get('/suppliers', [SupplierController::class, 'getSuppliers']);

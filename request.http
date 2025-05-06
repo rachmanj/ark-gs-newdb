@@ -1,0 +1,3 @@
+### Get all suppliers
+GET http://ark-gs.local/api/suppliers
+
