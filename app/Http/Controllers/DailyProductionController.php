@@ -65,6 +65,11 @@ class DailyProductionController extends Controller
         $monthlyProduction = DailyProduction::whereBetween('date', [$startOfMonth, $endOfMonth])
             ->get();
 
+        // Get production plans for the current month
+        $monthlyProductionPlans = \App\Models\ProductionPlan::where('year', $year)
+            ->where('month', $month)
+            ->get();
+
         // Get unique projects from the data
         $projects = $monthlyProduction->pluck('project')->unique();
 
@@ -90,6 +95,30 @@ class DailyProductionController extends Controller
             }
             
             $chartData[] = $projectData;
+            
+            // Add production plan data for this project if available
+            $projectPlan = $monthlyProductionPlans->where('project', $project)->first();
+            if ($projectPlan) {
+                // Calculate daily plan (monthly plan divided by days in month)
+                $daysInMonth = $endOfMonth->day;
+                $dailyPlanQty = (float) $projectPlan->qty / $daysInMonth;
+                
+                // Create a data point for each day in the month
+                $planData = [
+                    'name' => $project . ' (Plan)',
+                    'data' => []
+                ];
+                
+                for ($day = 1; $day <= $daysInMonth; $day++) {
+                    $date = Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
+                    $planData['data'][] = [
+                        'x' => $date,
+                        'y' => $dailyPlanQty
+                    ];
+                }
+                
+                $chartData[] = $planData;
+            }
         }
 
         // Get yearly production totals
@@ -123,6 +152,16 @@ class DailyProductionController extends Controller
                 'total' => $projectTotal,
                 'days' => $projectDays
             ];
+            
+            // Add production plan data row for this project if available
+            $projectPlan = $monthlyProductionPlans->where('project', $project)->first();
+            if ($projectPlan) {
+                $tableData[] = [
+                    'name' => $project . ' (Plan)',
+                    'total' => (float) $projectPlan->qty,
+                    'days' => [] // We don't have day-specific plan values
+                ];
+            }
         }
 
         // Return response with data in the format expected by the frontend
@@ -164,9 +203,17 @@ class DailyProductionController extends Controller
             ->groupBy('month', 'project')
             ->orderBy('month')
             ->get();
+            
+        // Get production plans for the year
+        $yearlyProductionPlans = \App\Models\ProductionPlan::where('year', $year)
+            ->get();
 
         // Get unique projects
         $projects = $yearlyProduction->pluck('project')->unique();
+        
+        // Add projects from production plans that might not be in actual production data
+        $planProjects = $yearlyProductionPlans->pluck('project')->unique();
+        $allProjects = $projects->merge($planProjects)->unique();
         
         // Prepare month names for labels
         $monthNames = [];
@@ -179,7 +226,7 @@ class DailyProductionController extends Controller
         // Organize data for table
         $tableData = [];
         
-        foreach ($projects as $project) {
+        foreach ($allProjects as $project) {
             $projectData = [
                 'name' => $project,
                 'data' => array_fill(0, 12, 0), // Initialize with zeroes for all 12 months
@@ -209,6 +256,39 @@ class DailyProductionController extends Controller
                 'total' => $projectTotal,
                 'months' => $projectMonths // Now a zero-indexed array
             ];
+            
+            // Add production plan data for this project
+            $projectPlans = [
+                'name' => $project . ' (Plan)',
+                'data' => array_fill(0, 12, 0), // Initialize with zeroes for all 12 months
+            ];
+            
+            $planMonths = array_values(array_fill(0, 12, 0)); // Zero-indexed array for all 12 months
+            $planTotal = 0;
+            
+            // Fill in planned data for months that have records
+            $projectPlanRecords = $yearlyProductionPlans->where('project', $project);
+            
+            foreach ($projectPlanRecords as $plan) {
+                $monthIndex = $plan->month - 1; // Convert from 1-based to 0-based indexing for chart
+                $projectPlans['data'][$monthIndex] = (float) $plan->qty;
+                
+                // For table data
+                $planMonths[$monthIndex] = (float) $plan->qty;
+                $planTotal += (float) $plan->qty;
+            }
+            
+            // Only add if we have at least one plan value for this project
+            if ($planTotal > 0) {
+                $chartData[] = $projectPlans;
+                
+                // Add to table data
+                $tableData[] = [
+                    'name' => $project . ' (Plan)',
+                    'total' => $planTotal,
+                    'months' => $planMonths
+                ];
+            }
         }
         
         return [
