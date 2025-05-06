@@ -27,38 +27,105 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentMonth = currentDate.getMonth() + 1; // JS months are 0-indexed
     const currentYear = currentDate.getFullYear();
 
-    document.getElementById("productionMonth").value = currentMonth;
-    document.getElementById("productionYear").value = currentYear;
+    const productionMonthSelect = document.getElementById("productionMonth");
+    const productionYearSelect = document.getElementById("productionYear");
+    const updateProductionChart = document.getElementById(
+        "updateProductionChart"
+    );
+
+    // Check if elements exist before using them
+    if (productionMonthSelect) {
+        productionMonthSelect.value = currentMonth;
+    }
+
+    if (productionYearSelect) {
+        productionYearSelect.value = currentYear;
+    }
 
     // Load initial data
     loadProductionData(currentMonth, currentYear);
 
-    // Add event listener for update button
-    document
-        .getElementById("updateProductionChart")
-        .addEventListener("click", function () {
-            const selectedMonth =
-                document.getElementById("productionMonth").value;
-            const selectedYear =
-                document.getElementById("productionYear").value;
+    // Add event listener for update button if it exists
+    if (updateProductionChart) {
+        updateProductionChart.addEventListener("click", function () {
+            const selectedMonth = productionMonthSelect
+                ? productionMonthSelect.value
+                : currentMonth;
+            const selectedYear = productionYearSelect
+                ? productionYearSelect.value
+                : currentYear;
             loadProductionData(selectedMonth, selectedYear);
         });
+    }
 });
 
 /**
  * Load production data for the selected month and year
  */
 function loadProductionData(month, year) {
-    // Update year displays
-    document.getElementById("yearlyChartYearDisplay").textContent = year;
-    document.getElementById("yearlyTabYearDisplay").textContent = year;
+    // Update year displays with null checks
+    const yearlyChartYearDisplay = document.getElementById(
+        "yearlyChartYearDisplay"
+    );
+    if (yearlyChartYearDisplay) {
+        yearlyChartYearDisplay.textContent = year;
+    }
 
-    // Show loading state for charts
-    showLoading("dailyChartContainer");
-    showLoading("yearlyChartContainer");
+    // Only update the yearlyTabYearDisplay if it exists
+    const yearlyTabElement = document.getElementById("yearlyTabYearDisplay");
+    if (yearlyTabElement) {
+        yearlyTabElement.textContent = year;
+    }
+
+    // Update the heading of the monthly production table
+    const monthlyProductionHeaders = document.querySelectorAll(
+        ".card-header h3.card-title"
+    );
+    monthlyProductionHeaders.forEach((header) => {
+        if (header && header.querySelector("i.fas.fa-table")) {
+            header.innerHTML = `<i class="fas fa-table mr-1"></i> Production Summary by Project - ${year}`;
+        }
+    });
+
+    // Show loading state for charts with null checks
+    const dailyChartContainer = document.getElementById("dailyChartContainer");
+    const yearlyChartContainer = document.getElementById(
+        "yearlyChartContainer"
+    );
+
+    if (dailyChartContainer) {
+        showLoading("dailyChartContainer");
+    }
+
+    if (yearlyChartContainer) {
+        showLoading("yearlyChartContainer");
+    }
 
     // Build URL with parameters and add timestamp to prevent caching
     const timestamp = new Date().getTime();
+
+    // Ensure dashboardDataUrl is defined
+    if (typeof dashboardDataUrl === "undefined") {
+        console.error("dashboardDataUrl is not defined");
+
+        // Show error messages in the containers if they exist
+        if (dailyChartContainer) {
+            showError(
+                "dailyChartContainer",
+                "Configuration error: API URL not defined"
+            );
+        }
+
+        if (yearlyChartContainer) {
+            showError(
+                "yearlyChartContainer",
+                "Configuration error: API URL not defined"
+            );
+        }
+
+        return; // Exit the function
+    }
+
     const url = `${dashboardDataUrl}?month=${month}&year=${year}&_=${timestamp}`;
 
     // Fetch data with proper headers to prevent caching
@@ -84,48 +151,88 @@ function loadProductionData(month, year) {
                 if (
                     data.current_month &&
                     data.current_month.chart_data &&
-                    data.current_month.chart_data.length > 0
+                    data.current_month.chart_data.length > 0 &&
+                    dailyChartContainer
                 ) {
                     createDailyChart(data.current_month, month, year);
                     populateCurrentMonthTable(data.current_month);
-                } else {
+                } else if (dailyChartContainer) {
                     showNoData(
                         "dailyChartContainer",
                         "No production data available for this month"
                     );
-                    showNoDataTable("dailyProductionTableBody");
+
+                    // Check if table body exists
+                    const dailyProductionTableBody = document.getElementById(
+                        "dailyProductionTableBody"
+                    );
+                    if (dailyProductionTableBody) {
+                        showNoDataTable("dailyProductionTableBody");
+                    }
                 }
 
                 // Process the yearly chart data
                 if (
                     data.yearly &&
                     data.yearly.chart_data &&
-                    data.yearly.chart_data.length > 0
+                    data.yearly.chart_data.length > 0 &&
+                    yearlyChartContainer
                 ) {
                     createYearlyChart(data.yearly);
                     populateYearlyTable(data.yearly);
-                } else {
+                } else if (yearlyChartContainer) {
                     showNoData(
                         "yearlyChartContainer",
                         "No yearly production data available"
                     );
-                    showNoDataTable("yearlyProductionTableBody");
+
+                    // Check if table body exists
+                    const yearlyProductionTableBody = document.getElementById(
+                        "yearlyProductionTableBody"
+                    );
+                    if (yearlyProductionTableBody) {
+                        showNoDataTable("yearlyProductionTableBody");
+                    }
                 }
             } catch (error) {
                 console.error("Error processing production data:", error);
-                showError("dailyChartContainer", "Error processing chart data");
-                showError(
-                    "yearlyChartContainer",
-                    "Error processing chart data"
-                );
+                if (dailyChartContainer) {
+                    showError(
+                        "dailyChartContainer",
+                        "Error processing chart data"
+                    );
+                }
+                if (yearlyChartContainer) {
+                    showError(
+                        "yearlyChartContainer",
+                        "Error processing chart data"
+                    );
+                }
             }
         })
         .catch((error) => {
             console.error("Error fetching production data:", error);
-            showError("dailyChartContainer", "Error loading chart data");
-            showError("yearlyChartContainer", "Error loading chart data");
-            showErrorTable("dailyProductionTableBody");
-            showErrorTable("yearlyProductionTableBody");
+            if (dailyChartContainer) {
+                showError("dailyChartContainer", "Error loading chart data");
+            }
+            if (yearlyChartContainer) {
+                showError("yearlyChartContainer", "Error loading chart data");
+            }
+
+            // Check if table bodies exist before showing errors
+            const dailyProductionTableBody = document.getElementById(
+                "dailyProductionTableBody"
+            );
+            if (dailyProductionTableBody) {
+                showErrorTable("dailyProductionTableBody");
+            }
+
+            const yearlyProductionTableBody = document.getElementById(
+                "yearlyProductionTableBody"
+            );
+            if (yearlyProductionTableBody) {
+                showErrorTable("yearlyProductionTableBody");
+            }
         });
 }
 
@@ -186,9 +293,12 @@ function showError(containerId, message) {
 function showNoDataTable(tableId) {
     const tableBody = document.getElementById(tableId);
     if (tableBody) {
+        // Determine the number of columns based on which table we're updating
+        const colSpan = tableId === "yearlyProductionTableBody" ? 14 : 33;
+
         tableBody.innerHTML = `
             <tr>
-                <td colspan="33" class="text-center">
+                <td colspan="${colSpan}" class="text-center">
                     <div class="alert alert-info m-0 border-0">
                         <i class="fas fa-info-circle mr-2"></i> No data available
                     </div>
@@ -204,9 +314,12 @@ function showNoDataTable(tableId) {
 function showErrorTable(tableId) {
     const tableBody = document.getElementById(tableId);
     if (tableBody) {
+        // Determine the number of columns based on which table we're updating
+        const colSpan = tableId === "yearlyProductionTableBody" ? 14 : 33;
+
         tableBody.innerHTML = `
             <tr>
-                <td colspan="33" class="text-center">
+                <td colspan="${colSpan}" class="text-center">
                     <div class="alert alert-danger m-0 border-0">
                         <i class="fas fa-exclamation-circle mr-2"></i> Error loading data
                     </div>
@@ -471,6 +584,12 @@ function populateCurrentMonthTable(monthData) {
     const tableBody = document.getElementById("dailyProductionTableBody");
     const dayColumns = document.getElementById("day-columns");
 
+    // Exit if the table body doesn't exist
+    if (!tableBody) {
+        console.warn("dailyProductionTableBody element not found");
+        return;
+    }
+
     // Clear loading content
     tableBody.innerHTML = "";
 
@@ -639,93 +758,211 @@ function populateCurrentMonthTable(monthData) {
  */
 function populateYearlyTable(yearlyData) {
     const tableBody = document.getElementById("yearlyProductionTableBody");
+
+    // Exit if the table body doesn't exist
+    if (!tableBody) {
+        console.warn("yearlyProductionTableBody element not found");
+        return;
+    }
+
     tableBody.innerHTML = ""; // Clear loading message
 
     if (yearlyData.table_data && yearlyData.table_data.length > 0) {
-        yearlyData.table_data.forEach((project, index) => {
-            try {
-                // Make sure months is an array
-                const monthsArray = Array.isArray(project.months)
-                    ? project.months
-                    : Object.values(project.months || {});
+        // Group data by project (actual and plan pairs)
+        const projectGroups = {};
 
-                // Calculate monthly average - only count months with data
-                const monthsWithData =
-                    monthsArray.filter((val) => val > 0).length || 1; // Avoid division by zero
-                const monthlyAverage = (project.total / monthsWithData).toFixed(
-                    2
-                );
+        yearlyData.table_data.forEach((project) => {
+            const projectName = project.name.replace(" (Plan)", ""); // Remove plan suffix if it exists
+            if (!projectGroups[projectName]) {
+                projectGroups[projectName] = { actual: null, plan: null };
+            }
 
-                // Check if this is a plan row
-                const isPlan = project.name.includes("(Plan)");
+            if (project.name.includes("(Plan)")) {
+                projectGroups[projectName].plan = project;
+            } else {
+                projectGroups[projectName].actual = project;
+            }
+        });
 
-                // Create row
-                const row = document.createElement("tr");
+        // Add project rows (actual and plan)
+        Object.keys(projectGroups).forEach((projectName, index) => {
+            const projectData = projectGroups[projectName];
 
-                // Add classes for plan rows
-                if (isPlan) {
-                    row.classList.add("plan-row", "bg-light", "font-italic");
-                }
+            // Add plan data row first if available (so it appears above the actual data for comparison)
+            if (projectData.plan) {
+                addProductionRow(tableBody, projectData.plan, index, true);
+            }
 
-                row.innerHTML = `
-                    <td>
-                        <span class="badge-dot" style="background-color: ${
-                            colorPalette[index % colorPalette.length]
-                        }${isPlan ? "80" : ""}" ${
-                    isPlan ? 'style="border: 1px dashed #666"' : ""
-                }></span>
-                        ${project.name}
-                    </td>
-                    <td class="text-right">${project.total.toLocaleString()}</td>
-                    <td class="text-right">${monthlyAverage.toLocaleString()}</td>
-                `;
-                tableBody.appendChild(row);
-            } catch (e) {
-                console.error(
-                    "Error processing yearly table data for project:",
-                    e
+            // Add actual data row if available (with plan data for comparison)
+            if (projectData.actual) {
+                addProductionRow(
+                    tableBody,
+                    projectData.actual,
+                    index,
+                    false,
+                    projectData.plan
                 );
             }
         });
 
-        // Add a total row, only for actual production (not plans)
-        const actualProjects = yearlyData.table_data.filter(
-            (project) => !project.name.includes("(Plan)")
-        );
-        if (actualProjects.length > 0) {
-            // Calculate grand total
-            const grandTotal = actualProjects.reduce(
-                (sum, project) => sum + project.total,
-                0
-            );
-
-            // Calculate average monthly total
-            const monthlyTotals = Array(12).fill(0);
-            actualProjects.forEach((project) => {
-                project.months.forEach((val, idx) => {
-                    monthlyTotals[idx] += Number(val);
-                });
-            });
-
-            // Count months with production
-            const monthsWithProduction =
-                monthlyTotals.filter((val) => val > 0).length || 1;
-            const monthlyAverage = (grandTotal / monthsWithProduction).toFixed(
-                2
-            );
-
-            // Create total row
-            const totalRow = document.createElement("tr");
-            totalRow.classList.add("font-weight-bold", "bg-light");
-            totalRow.innerHTML = `
-                <td>TOTAL</td>
-                <td class="text-right">${grandTotal.toLocaleString()}</td>
-                <td class="text-right">${monthlyAverage.toLocaleString()}</td>
-            `;
-            tableBody.appendChild(totalRow);
-        }
+        // Add monthly totals row
+        addMonthlyTotalsRow(tableBody, yearlyData.table_data);
     } else {
         tableBody.innerHTML =
-            '<tr><td colspan="3" class="text-center">No yearly production data available</td></tr>';
+            '<tr><td colspan="14" class="text-center">No yearly production data available</td></tr>';
+    }
+}
+
+/**
+ * Add a production row to the yearly table
+ *
+ * @param {HTMLElement} tableBody - The table body element
+ * @param {Object} project - The project data
+ * @param {Number} index - The index for color selection
+ * @param {Boolean} isPlan - Whether this is a plan row
+ * @param {Object} planData - Optional plan data for comparison with actual
+ */
+function addProductionRow(tableBody, project, index, isPlan, planData = null) {
+    try {
+        // Create row
+        const row = document.createElement("tr");
+
+        // Add classes for plan rows
+        if (isPlan) {
+            row.classList.add("plan-row", "bg-light", "font-italic");
+        }
+
+        // Make sure months is an array with 12 values
+        const monthsArray = Array.isArray(project.months)
+            ? project.months
+            : Object.values(project.months || {});
+
+        // Ensure we have 12 months of data
+        const monthData = Array(12).fill(0);
+        monthsArray.forEach((value, idx) => {
+            if (idx < 12) {
+                monthData[idx] = Number(value) || 0;
+            }
+        });
+
+        // Format the project name row
+        let rowHtml = `
+            <td>
+                <span class="badge-dot" style="background-color: ${
+                    colorPalette[index % colorPalette.length]
+                }${isPlan ? "80" : ""}" ${
+            isPlan ? 'style="border: 1px dashed #666"' : ""
+        }></span>
+                ${project.name}
+            </td>
+        `;
+
+        // Add monthly data
+        monthData.forEach((value, monthIndex) => {
+            // Always use 1 decimal place formatting
+            const formattedValue =
+                value > 0
+                    ? value.toLocaleString("en-US", {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                      })
+                    : "-";
+
+            // If this is actual data (not plan) and we have plan data, check if it's below target
+            let isBelowTarget = false;
+            if (!isPlan && planData && planData.months) {
+                const planValue = Array.isArray(planData.months)
+                    ? planData.months[monthIndex] || 0
+                    : Object.values(planData.months || {})[monthIndex] || 0;
+
+                isBelowTarget = value > 0 && value < planValue;
+            }
+
+            const cellClass = isBelowTarget ? "below-target" : "";
+            rowHtml += `<td class="text-right ${cellClass}">${formattedValue}</td>`;
+        });
+
+        // Add total - always with 1 decimal place
+        const formattedTotal = project.total.toLocaleString("en-US", {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+        });
+
+        // Check if total is below plan if this is actual data
+        let isTotalBelowTarget = false;
+        if (!isPlan && planData) {
+            isTotalBelowTarget =
+                project.total > 0 && project.total < planData.total;
+        }
+
+        const totalCellClass = isTotalBelowTarget ? "below-target" : "";
+        rowHtml += `<td class="text-right font-weight-bold ${totalCellClass}">${formattedTotal}</td>`;
+
+        row.innerHTML = rowHtml;
+        tableBody.appendChild(row);
+    } catch (e) {
+        console.error("Error adding production row to table:", e);
+    }
+}
+
+/**
+ * Add monthly totals row to the yearly table
+ */
+function addMonthlyTotalsRow(tableBody, tableData) {
+    try {
+        // Create totals row
+        const totalRow = document.createElement("tr");
+        totalRow.classList.add("font-weight-bold", "bg-light");
+
+        // Start with the "TOTAL" cell
+        let totalRowHtml = `<td>TOTAL</td>`;
+
+        // Calculate monthly totals (only for actual production, not plans)
+        const monthlyTotals = Array(12).fill(0);
+        let grandTotal = 0;
+
+        // Filter only actual production rows (not plan rows)
+        const actualProductionData = tableData.filter(
+            (project) => !project.name.includes("(Plan)")
+        );
+
+        // Calculate totals for each month
+        actualProductionData.forEach((project) => {
+            const monthsArray = Array.isArray(project.months)
+                ? project.months
+                : Object.values(project.months || {});
+
+            monthsArray.forEach((value, idx) => {
+                if (idx < 12) {
+                    const numValue = Number(value) || 0;
+                    monthlyTotals[idx] += numValue;
+                    grandTotal += numValue;
+                }
+            });
+        });
+
+        // Add monthly totals to the row - always with 1 decimal place
+        monthlyTotals.forEach((total) => {
+            const formattedTotal =
+                total > 0
+                    ? total.toLocaleString("en-US", {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                      })
+                    : "-";
+            totalRowHtml += `<td class="text-right">${formattedTotal}</td>`;
+        });
+
+        // Add grand total - always with 1 decimal place
+        const formattedGrandTotal = grandTotal.toLocaleString("en-US", {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+        });
+        totalRowHtml += `<td class="text-right">${formattedGrandTotal}</td>`;
+
+        totalRow.innerHTML = totalRowHtml;
+        tableBody.appendChild(totalRow);
+    } catch (e) {
+        console.error("Error adding totals row to table:", e);
     }
 }

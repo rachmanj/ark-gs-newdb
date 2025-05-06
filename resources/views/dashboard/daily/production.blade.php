@@ -28,8 +28,7 @@
 
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 animate__animated animate__fadeIn ribbon-container">
-            <div class="ribbon chart-ribbon">Trial</div>
+        <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
             <div class="card-header bg-gradient-info text-white border-0">
                 <div class="d-flex justify-content-between align-items-center">
                     <h3 class="card-title">
@@ -89,8 +88,7 @@
 <!-- Yearly Production Data -->
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 animate__animated animate__fadeIn ribbon-container">
-            <div class="ribbon chart-ribbon">Trial</div>
+        <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
             <div class="card-header bg-gradient-success text-white border-0">
                 <div class="d-flex justify-content-between align-items-center">
                     <h3 class="card-title">
@@ -137,90 +135,85 @@
 <!-- Daily Production Table -->
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 animate__animated animate__fadeIn ribbon-container">
-            <div class="ribbon">Trial</div>
+        <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
             <div class="card-header bg-gradient-info text-white border-0">
                 <h3 class="card-title">
                     <i class="fas fa-table mr-1"></i>
-                    Production Summary by Project
+                    Production Summary by Project - {{ now()->year }}
                 </h3>
             </div>
             <div class="card-body">
-                <ul class="nav nav-tabs" id="productionTabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="current-month-tab" data-toggle="tab" href="#current-month"
-                            role="tab" aria-controls="current-month" aria-selected="true">This Month</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="yearly-tab" data-toggle="tab" href="#yearly-data" role="tab"
-                            aria-controls="yearly-data" aria-selected="false"><span
-                                id="yearlyTabYearDisplay">{{ now()->year }}</span> Summary</a>
-                    </li>
-                </ul>
-                <div class="tab-content pt-3" id="productionTabsContent">
-                    <div class="tab-pane fade show active" id="current-month" role="tabpanel"
-                        aria-labelledby="current-month-tab">
-                        <div class="table-responsive-xl horizontal-scroll">
-                            <table class="table table-bordered table-striped table-hover table-compact table-sm">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="text-center align-middle sticky-col first-col">Project</th>
-                                        <th class="text-center align-middle sticky-col second-col">Total</th>
-                                        <th class="text-center day-column" id="day-columns">
-                                            <div class="spinner-border spinner-border-sm" role="status">
-                                                <span class="sr-only">Loading...</span>
-                                            </div>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="dailyProductionTableBody">
-                                    <tr>
-                                        <td colspan="33" class="text-center">
-                                            <div class="spinner-border" role="status">
-                                                <span class="sr-only">Loading...</span>
-                                            </div>
-                                            <p class="mt-2">Loading production data...</p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Table Legend -->
-                        <div class="mt-2 small text-muted">
-                            <div><i class="fas fa-circle mr-1"></i> Regular rows show actual production data</div>
-                            <div><i class="fas fa-circle-notch mr-1"></i> <span class="font-italic">Italic rows</span>
-                                show planned production targets</div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="yearly-data" role="tabpanel" aria-labelledby="yearly-tab">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-hover table-compact">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="text-center">Project</th>
-                                        <th class="text-center">Total</th>
-                                        <th class="text-center">Monthly Average</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="yearlyProductionTableBody">
-                                    <tr>
-                                        <td colspan="3" class="text-center">Loading data...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Table Legend -->
-                        <div class="mt-2 small text-muted">
-                            <div><i class="fas fa-circle mr-1"></i> Regular rows show actual production data</div>
-                            <div><i class="fas fa-circle-notch mr-1"></i> <span class="font-italic">Italic rows</span>
-                                show planned production targets</div>
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover table-compact table-sm">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center align-middle" rowspan="2"
+                                    style="width: 200px; font-size: 0.9rem;">Project</th>
+                                <th class="text-center" colspan="12" style="font-size: 0.9rem;">Monthly Production
+                                </th>
+                                <th class="text-center align-middle" rowspan="2"
+                                    style="width: 100px; font-size: 0.9rem;">Total</th>
+                            </tr>
+                            <tr id="monthly-production-header">
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Jan</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Feb</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Mar</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Apr</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">May</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Jun</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Jul</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Aug</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Sep</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Oct</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Nov</th>
+                                <th class="text-center" style="width: 60px; font-size: 0.85rem;">Dec</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlyProductionTableBody">
+                            <tr>
+                                <td colspan="14" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading production data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Table Legend -->
+                <div class="mt-2 small text-muted">
+                    <div><i class="fas fa-circle mr-1"></i> Regular rows show actual production data</div>
+                    <div><i class="fas fa-circle-notch mr-1"></i> <span class="font-italic">Italic rows</span> show
+                        planned production targets</div>
+                    <div><i class="fas fa-exclamation-circle text-danger mr-1"></i> <span class="text-danger">Red
+                            values</span> indicate actual production below planned target</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Production table specific styles */
+    .table-compact.table-sm th,
+    .table-compact.table-sm td {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    /* Target production cells specifically */
+    #yearlyProductionTableBody td {
+        vertical-align: middle;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Style for below-target production */
+    .below-target {
+        color: #dc3545 !important;
+        font-weight: 600;
+    }
+</style>
 
 <!-- Custom script to modify how Charts.js handles plan datasets -->
 <script>
