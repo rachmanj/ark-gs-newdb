@@ -85,8 +85,10 @@ class DailyProductionController extends Controller
             $projectRecords = $monthlyProduction->where('project', $project);
             
             foreach ($projectRecords as $record) {
-                // Calculate total quantity (day_shift + night_shift)
-                $totalQuantity = ($record->day_shift ?? 0) + ($record->night_shift ?? 0);
+                // Calculate total quantity (day_shift + night_shift) - ensure float precision
+                $dayShift = (float) ($record->day_shift ?? 0);
+                $nightShift = (float) ($record->night_shift ?? 0);
+                $totalQuantity = $dayShift + $nightShift;
                 
                 $projectData['data'][] = [
                     'x' => $record->date->format('Y-m-d'),
@@ -142,7 +144,9 @@ class DailyProductionController extends Controller
             $projectRecords = $monthlyProduction->where('project', $project);
             foreach ($projectRecords as $record) {
                 $dateStr = $record->date->format('Y-m-d');
-                $totalQuantity = ($record->day_shift ?? 0) + ($record->night_shift ?? 0);
+                $dayShift = (float) ($record->day_shift ?? 0);
+                $nightShift = (float) ($record->night_shift ?? 0);
+                $totalQuantity = $dayShift + $nightShift;
                 $projectDays[$dateStr] = $totalQuantity;
                 $projectTotal += $totalQuantity;
             }
@@ -194,15 +198,18 @@ class DailyProductionController extends Controller
         $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
 
         // Get production data grouped by month and project
+        // Force integer calculation to match manual sum approach
         $yearlyProduction = DailyProduction::whereBetween('date', [$startOfYear, $endOfYear])
             ->select(
                 DB::raw('MONTH(date) as month'),
                 'project',
-                DB::raw('SUM(day_shift + night_shift) as total_quantity')
+                DB::raw('SUM(COALESCE(day_shift, 0) + COALESCE(night_shift, 0)) as total_quantity')
             )
             ->groupBy('month', 'project')
             ->orderBy('month')
             ->get();
+            
+
             
         // Get production plans for the year
         $yearlyProductionPlans = \App\Models\ProductionPlan::where('year', $year)

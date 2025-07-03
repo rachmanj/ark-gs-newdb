@@ -147,6 +147,9 @@ function loadProductionData(month, year) {
         })
         .then((data) => {
             try {
+                // Store data globally for validation
+                window.lastLoadedData = data;
+
                 // Process the daily chart data
                 if (
                     data.current_month &&

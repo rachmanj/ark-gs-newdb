@@ -194,6 +194,8 @@
     </div>
 </div>
 
+
+
 <style>
     /* Production table specific styles */
     .table-compact.table-sm th,
@@ -329,10 +331,14 @@
                         }
                     }
                 });
+
+
             } catch (error) {
                 console.error("Error creating yearly chart:", error);
                 showError("yearlyChartContainer", "Error creating chart");
             }
         };
+
+
     });
 </script>

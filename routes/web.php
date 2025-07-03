@@ -24,6 +24,7 @@ use App\Http\Controllers\ProductionPlanController;
 use Illuminate\Support\Facades\Route;
 
 
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
     Route::post('/login', [LoginController::class, 'authenticate'])->name('authenticate');
@@ -181,4 +182,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/edit-data', [ProductionPlanController::class, 'getForEdit'])->name('edit-data');
     });
     Route::resource('production-plan', ProductionPlanController::class);
+
+
 });
