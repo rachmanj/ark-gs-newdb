@@ -808,7 +808,7 @@ function populateYearlyTable(yearlyData) {
             }
         });
 
-        // Add monthly totals row
+        // Add monthly totals rows (both actual and plan)
         addMonthlyTotalsRow(tableBody, yearlyData.table_data);
     } else {
         tableBody.innerHTML =
@@ -871,17 +871,20 @@ function addProductionRow(tableBody, project, index, isPlan, planData = null) {
                       })
                     : "-";
 
-            // If this is actual data (not plan) and we have plan data, check if it's below target
-            let isBelowTarget = false;
-            if (!isPlan && planData && planData.months) {
+            // If this is actual data (not plan) and we have plan data, check performance vs target
+            let cellClass = "";
+            if (!isPlan && planData && planData.months && value > 0) {
                 const planValue = Array.isArray(planData.months)
                     ? planData.months[monthIndex] || 0
                     : Object.values(planData.months || {})[monthIndex] || 0;
 
-                isBelowTarget = value > 0 && value < planValue;
+                if (value < planValue) {
+                    cellClass = "below-target";
+                } else if (value >= planValue && planValue > 0) {
+                    cellClass = "meets-target";
+                }
             }
 
-            const cellClass = isBelowTarget ? "below-target" : "";
             rowHtml += `<td class="text-right ${cellClass}">${formattedValue}</td>`;
         });
 
@@ -891,14 +894,16 @@ function addProductionRow(tableBody, project, index, isPlan, planData = null) {
             maximumFractionDigits: 1,
         });
 
-        // Check if total is below plan if this is actual data
-        let isTotalBelowTarget = false;
-        if (!isPlan && planData) {
-            isTotalBelowTarget =
-                project.total > 0 && project.total < planData.total;
+        // Check total performance vs plan if this is actual data
+        let totalCellClass = "";
+        if (!isPlan && planData && project.total > 0) {
+            if (project.total < planData.total) {
+                totalCellClass = "below-target";
+            } else if (project.total >= planData.total && planData.total > 0) {
+                totalCellClass = "meets-target";
+            }
         }
 
-        const totalCellClass = isTotalBelowTarget ? "below-target" : "";
         rowHtml += `<td class="text-right font-weight-bold ${totalCellClass}">${formattedTotal}</td>`;
 
         row.innerHTML = rowHtml;
@@ -909,27 +914,79 @@ function addProductionRow(tableBody, project, index, isPlan, planData = null) {
 }
 
 /**
- * Add monthly totals row to the yearly table
+ * Add monthly totals rows to the yearly table (both plan and actual)
  */
 function addMonthlyTotalsRow(tableBody, tableData) {
     try {
-        // Create totals row
-        const totalRow = document.createElement("tr");
-        totalRow.classList.add("font-weight-bold", "bg-light");
-
-        // Start with the "TOTAL" cell
-        let totalRowHtml = `<td>TOTAL</td>`;
-
-        // Calculate monthly totals (only for actual production, not plans)
-        const monthlyTotals = Array(12).fill(0);
-        let grandTotal = 0;
-
-        // Filter only actual production rows (not plan rows)
+        // Separate actual and plan data
         const actualProductionData = tableData.filter(
             (project) => !project.name.includes("(Plan)")
         );
+        const planProductionData = tableData.filter((project) =>
+            project.name.includes("(Plan)")
+        );
 
-        // Calculate totals for each month
+        // Calculate plan totals if plan data exists
+        if (planProductionData.length > 0) {
+            const planTotalsRow = document.createElement("tr");
+            planTotalsRow.classList.add(
+                "font-weight-bold",
+                "bg-light",
+                "font-italic"
+            );
+
+            let planRowHtml = `<td>TOTAL PLAN</td>`;
+            const monthlyPlanTotals = Array(12).fill(0);
+            let grandPlanTotal = 0;
+
+            planProductionData.forEach((project) => {
+                const monthsArray = Array.isArray(project.months)
+                    ? project.months
+                    : Object.values(project.months || {});
+
+                monthsArray.forEach((value, idx) => {
+                    if (idx < 12) {
+                        const numValue = Number(value) || 0;
+                        monthlyPlanTotals[idx] += numValue;
+                        grandPlanTotal += numValue;
+                    }
+                });
+            });
+
+            // Add monthly plan totals
+            monthlyPlanTotals.forEach((total) => {
+                const formattedTotal =
+                    total > 0
+                        ? total.toLocaleString("en-US", {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                          })
+                        : "-";
+                planRowHtml += `<td class="text-right">${formattedTotal}</td>`;
+            });
+
+            // Add grand plan total
+            const formattedGrandPlanTotal = grandPlanTotal.toLocaleString(
+                "en-US",
+                {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                }
+            );
+            planRowHtml += `<td class="text-right">${formattedGrandPlanTotal}</td>`;
+
+            planTotalsRow.innerHTML = planRowHtml;
+            tableBody.appendChild(planTotalsRow);
+        }
+
+        // Calculate actual totals
+        const actualTotalsRow = document.createElement("tr");
+        actualTotalsRow.classList.add("font-weight-bold", "bg-light");
+
+        let actualRowHtml = `<td>TOTAL ACTUAL</td>`;
+        const monthlyActualTotals = Array(12).fill(0);
+        let grandActualTotal = 0;
+
         actualProductionData.forEach((project) => {
             const monthsArray = Array.isArray(project.months)
                 ? project.months
@@ -938,34 +995,99 @@ function addMonthlyTotalsRow(tableBody, tableData) {
             monthsArray.forEach((value, idx) => {
                 if (idx < 12) {
                     const numValue = Number(value) || 0;
-                    monthlyTotals[idx] += numValue;
-                    grandTotal += numValue;
+                    monthlyActualTotals[idx] += numValue;
+                    grandActualTotal += numValue;
                 }
             });
         });
 
-        // Add monthly totals to the row - always with 1 decimal place
-        monthlyTotals.forEach((total) => {
-            const formattedTotal =
-                total > 0
-                    ? total.toLocaleString("en-US", {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                      })
-                    : "-";
-            totalRowHtml += `<td class="text-right">${formattedTotal}</td>`;
-        });
+        // Add monthly actual totals with color coding if plan data exists
+        if (planProductionData.length > 0) {
+            const monthlyPlanTotals = Array(12).fill(0);
+            let grandPlanTotal = 0;
 
-        // Add grand total - always with 1 decimal place
-        const formattedGrandTotal = grandTotal.toLocaleString("en-US", {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-        });
-        totalRowHtml += `<td class="text-right">${formattedGrandTotal}</td>`;
+            // Recalculate plan totals for comparison
+            planProductionData.forEach((project) => {
+                const monthsArray = Array.isArray(project.months)
+                    ? project.months
+                    : Object.values(project.months || {});
 
-        totalRow.innerHTML = totalRowHtml;
-        tableBody.appendChild(totalRow);
+                monthsArray.forEach((value, idx) => {
+                    if (idx < 12) {
+                        const numValue = Number(value) || 0;
+                        monthlyPlanTotals[idx] += numValue;
+                        grandPlanTotal += numValue;
+                    }
+                });
+            });
+
+            // Add monthly totals with color coding
+            monthlyActualTotals.forEach((actualTotal, idx) => {
+                const planTotal = monthlyPlanTotals[idx];
+                let cellClass = "";
+
+                if (actualTotal > 0 && planTotal > 0) {
+                    if (actualTotal < planTotal) {
+                        cellClass = "below-target";
+                    } else if (actualTotal >= planTotal) {
+                        cellClass = "meets-target";
+                    }
+                }
+
+                const formattedTotal =
+                    actualTotal > 0
+                        ? actualTotal.toLocaleString("en-US", {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                          })
+                        : "-";
+                actualRowHtml += `<td class="text-right ${cellClass}">${formattedTotal}</td>`;
+            });
+
+            // Add grand total with color coding
+            let grandTotalClass = "";
+            if (grandActualTotal > 0 && grandPlanTotal > 0) {
+                if (grandActualTotal < grandPlanTotal) {
+                    grandTotalClass = "below-target";
+                } else if (grandActualTotal >= grandPlanTotal) {
+                    grandTotalClass = "meets-target";
+                }
+            }
+
+            const formattedGrandActualTotal = grandActualTotal.toLocaleString(
+                "en-US",
+                {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                }
+            );
+            actualRowHtml += `<td class="text-right ${grandTotalClass}">${formattedGrandActualTotal}</td>`;
+        } else {
+            // No plan data, just add totals without color coding
+            monthlyActualTotals.forEach((total) => {
+                const formattedTotal =
+                    total > 0
+                        ? total.toLocaleString("en-US", {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                          })
+                        : "-";
+                actualRowHtml += `<td class="text-right">${formattedTotal}</td>`;
+            });
+
+            const formattedGrandActualTotal = grandActualTotal.toLocaleString(
+                "en-US",
+                {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                }
+            );
+            actualRowHtml += `<td class="text-right">${formattedGrandActualTotal}</td>`;
+        }
+
+        actualTotalsRow.innerHTML = actualRowHtml;
+        tableBody.appendChild(actualTotalsRow);
     } catch (e) {
-        console.error("Error adding totals row to table:", e);
+        console.error("Error adding totals rows to table:", e);
     }
 }

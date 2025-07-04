@@ -188,6 +188,8 @@
                         planned production targets</div>
                     <div><i class="fas fa-exclamation-circle text-danger mr-1"></i> <span class="text-danger">Red
                             values</span> indicate actual production below planned target</div>
+                    <div><i class="fas fa-check-circle text-success mr-1"></i> <span class="text-success">Green
+                            values</span> indicate actual production meets or exceeds planned target</div>
                 </div>
             </div>
         </div>
@@ -213,6 +215,12 @@
     /* Style for below-target production */
     .below-target {
         color: #dc3545 !important;
+        font-weight: 600;
+    }
+
+    /* Style for meeting or exceeding target production */
+    .meets-target {
+        color: #28a745 !important;
         font-weight: 600;
     }
 </style>
