@@ -43,8 +43,8 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Working On Now
 
--   `[ ] P1: Review and optimize database queries for large datasets [powithetas, grpos, migis tables]`
--   `[ ] P2: Implement comprehensive error handling for Excel import operations [PowithetaImport, GrpoImport classes]`
+-   `[ ] P2: Create export template views for yearly dashboard [dashboard.yearly.exports directory]`
+-   `[ ] P2: Implement caching for dashboard aggregations [DashboardDailyController::index]`
 
 ## Up Next (This Week)
 
@@ -59,6 +59,10 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P0: Fix breadcrumb navigation bug in yearly dashboard [resources/views/dashboard/yearly/new_display.blade.php:8] (completed: 2025-01-16)`
+-   `[done] P0: Add project 025C to yearly dashboard controllers [YearlyIndexController:15, YearlyHistoryController:11] (completed: 2025-01-16)`
+-   `[done] P1: Implement responsive design improvements for yearly dashboard [enhanced UI with Select2, loading indicators, info boxes] (completed: 2025-01-16)`
+-   `[done] P1: Add comprehensive export functionality [Excel, PDF, CSV formats with modal interface] (completed: 2025-01-16)`
 -   `[done] P0: Comprehensive codebase analysis and documentation [docs/architecture.md, docs/decisions.md, MEMORY.md] (completed: 2025-01-16)`
 -   `[done] P1: Document architectural decisions and technology choices [docs/decisions.md with 5 major decisions] (completed: 2025-01-16)`
 -   `[done] P1: Create system memory entries for future AI assistance [MEMORY.md with 4 key discoveries] (completed: 2025-01-16)`

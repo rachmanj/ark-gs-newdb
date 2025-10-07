@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/yearly', [DashboardYearlyController::class, 'index'])->name('yearly.index');
         Route::post('/yearly', [DashboardYearlyController::class, 'display'])->name('yearly.display');
+        Route::post('/yearly/export', [DashboardYearlyController::class, 'export'])->name('yearly.export');
         Route::get('/yearly/test', [DashboardYearlyController::class, 'test'])->name('yearly.test');
 
         Route::get('/other', [DashboardOtherController::class, 'index'])->name('other.index');
@@ -182,6 +183,4 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/edit-data', [ProductionPlanController::class, 'getForEdit'])->name('edit-data');
     });
     Route::resource('production-plan', ProductionPlanController::class);
-
-
 });
