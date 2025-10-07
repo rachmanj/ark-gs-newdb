@@ -64,3 +64,23 @@
 **Solution**: Identified four main dashboard types: Daily (real-time operational metrics), Monthly (performance analytics), Yearly (annual trends), and Other (specialized business unit views). Dashboard system integrates Chart.js for visualizations and DataTables for dynamic data presentation.
 
 **Key Learning**: Dashboard system provides comprehensive business intelligence with CAPEX vs Regular budget tracking, production performance metrics, and financial reporting. System supports both real-time data aggregation and historical trend analysis with export capabilities to Excel and PDF formats.
+
+---
+
+### [005] Yearly Dashboard Phase 1 Critical Fixes (2025-01-16) ✅ COMPLETE
+
+**Challenge**: Multiple critical issues in yearly dashboard: incorrect breadcrumb navigation, missing project 025C from all analytics, poor mobile responsiveness, and lack of export functionality.
+
+**Solution**: Fixed breadcrumb bug from "dashboard / monthly" to "dashboard / yearly". Added project 025C to both YearlyIndexController and YearlyHistoryController include_projects arrays. Implemented responsive design with Select2 dropdowns, loading indicators, collapsible cards, and info boxes. Created comprehensive export functionality supporting Excel, PDF, and CSV formats with backend controller methods and frontend modal interface.
+
+**Key Learning**: Project inclusion is controlled by hardcoded arrays in controller properties - must update both current year (YearlyIndexController::$include_projects) and historical year (YearlyHistoryController::$include_projects) controllers to ensure complete data coverage. Export functionality requires separate backend routes and proper CSRF token handling for form submission.
+
+---
+
+### [006] ApexCharts Interactive Visualization Implementation (2025-01-16) ✅ COMPLETE
+
+**Challenge**: Transform text-based yearly dashboard into interactive visual analytics platform with professional charts for better data comprehension and stakeholder presentations.
+
+**Solution**: Integrated ApexCharts v3.45.1 library and created seven comprehensive chart types: (1) Budget Performance Bar Chart comparing Budget vs PO Sent, (2) Budget Distribution Donut Chart showing percentage breakdown, (3) GRPO Completion Rate Bar Chart with color-coded performance indicators, (4) GRPO Gauge Chart displaying overall completion percentage, (5) NPI Production Index Bar Chart comparing incoming/outgoing quantities, (6) NPI Scatter Chart for production flow analysis, (7) Radar Chart providing 360° multi-metric performance view. Implemented individual chart export functionality, interactive tooltips, zoom/pan capabilities, and responsive design.
+
+**Key Learning**: Chart library initialization must occur after jQuery loads - solved by moving scripts to @section('scripts') instead of inline. Data transformation from backend requires proper JSON encoding with {!! json_encode() !!} to prevent HTML entity issues. Chart instances should be stored globally for export functionality. Indonesian number formatting requires custom tooltip formatters using toLocaleString('id-ID'). ApexCharts provides excellent out-of-box interactivity but requires careful color coding for usability (red < 80%, yellow 80-95%, green > 95% for completion rates).

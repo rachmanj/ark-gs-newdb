@@ -178,3 +178,84 @@ Decision: [Title] - [YYYY-MM-DD]
 -   Foreign key relationships and constraints
 
 **Review Date**: 2025-08-01
+
+---
+
+### Decision: ApexCharts for Interactive Dashboard Visualizations - 2025-01-16
+
+**Context**: Yearly dashboard required modern, interactive visualizations to replace static data tables. Need for professional charts with export capabilities, responsive design, and better data comprehension for stakeholders.
+
+**Options Considered**:
+
+1. **Chart.js (Existing)**:
+
+    - ✅ Pros: Already integrated, lightweight, simple API
+    - ❌ Cons: Limited interactivity, basic chart types, no built-in export, less modern UI
+
+2. **Highcharts**:
+
+    - ✅ Pros: Feature-rich, professional appearance, extensive documentation
+    - ❌ Cons: Commercial license required, more expensive, larger bundle size
+
+3. **ApexCharts**:
+    - ✅ Pros: Free for commercial use, modern design, interactive out-of-box, built-in export, excellent responsive design, comprehensive chart types, smooth animations
+    - ❌ Cons: Larger than Chart.js, requires CDN or npm installation
+
+**Decision**: ApexCharts v3.45.1 for yearly dashboard visualizations
+
+**Rationale**: ApexCharts provides the best balance of features, cost (free), and user experience. Built-in interactivity (hover, zoom, pan), export functionality, and modern design significantly improve data comprehension without licensing costs. The library's responsive design and smooth animations create a professional dashboard experience that aligns with stakeholder expectations.
+
+**Implementation**:
+
+-   ApexCharts loaded via CDN in yearly dashboard view
+-   Seven chart types implemented:
+    1. Budget Performance Bar Chart (Budget vs PO Sent)
+    2. Budget Distribution Donut Chart
+    3. GRPO Completion Rate Bar Chart (color-coded)
+    4. GRPO Gauge Chart (radial progress)
+    5. NPI Production Index Bar Chart
+    6. NPI Scatter Chart (production flow)
+    7. Radar Chart (multi-metric 360° view)
+-   Individual chart export to PNG/SVG
+-   Custom Indonesian number formatting in tooltips
+-   Responsive design for mobile/tablet/desktop
+-   Chart instances stored globally for export functionality
+-   Scripts loaded via @section('scripts') for proper jQuery dependency order
+
+**Review Date**: 2026-01-01
+
+---
+
+### Decision: Hardcoded Project Inclusion Arrays in Controllers - 2025-01-16
+
+**Context**: Project 025C was missing from yearly dashboard analytics due to hardcoded project arrays in controllers. Need to ensure all active projects are included in dashboard calculations.
+
+**Options Considered**:
+
+1. **Keep Hardcoded Arrays**:
+
+    - ✅ Pros: Explicit control, no database queries, fast performance
+    - ❌ Cons: Manual updates required, easy to forget, maintenance burden
+
+2. **Database-Driven Project Lists**:
+
+    - ✅ Pros: Dynamic updates, no code changes needed, single source of truth
+    - ❌ Cons: Additional database queries, potential performance impact
+
+3. **Configuration File**:
+    - ✅ Pros: Centralized configuration, easy updates, no code changes
+    - ❌ Cons: Requires cache clearing, still manual process
+
+**Decision**: Continue with hardcoded arrays but with improved documentation and dual-controller awareness
+
+**Rationale**: Hardcoded arrays provide best performance for dashboard queries that run frequently. Database-driven approach would add unnecessary queries to every dashboard load. Current approach works well when properly documented. Key improvement is ensuring both YearlyIndexController and YearlyHistoryController are updated together.
+
+**Implementation**:
+
+-   Updated both controllers to include project 025C:
+    -   `YearlyIndexController::$include_projects = ['017C', '021C', '022C', '023C', '025C', 'APS']`
+    -   `YearlyHistoryController::$include_projects = ['017C', '021C', '022C', '023C', '025C', 'APS']`
+-   Documented in MEMORY.md that both controllers must be updated together
+-   Added to architecture documentation for future reference
+
+**Review Date**: 2025-06-01 (when considering dashboard refactoring)

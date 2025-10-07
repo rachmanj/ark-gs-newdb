@@ -65,7 +65,8 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **Database**: MySQL with Eloquent ORM
 -   **Authentication**: Laravel Sanctum with Spatie Permission package
 -   **Data Processing**: Laravel Excel (Maatwebsite) for import/export operations
--   **UI Components**: DataTables (Yajra) for dynamic tables, Chart.js for visualizations
+-   **UI Components**: DataTables (Yajra) for dynamic tables, Chart.js for basic visualizations
+-   **Data Visualization**: ApexCharts v3.45.1 for interactive charts (yearly dashboard)
 -   **PDF Generation**: DomPDF for report generation
 -   **Asset Compilation**: Laravel Mix with Webpack
 
@@ -83,7 +84,17 @@ This document describes the CURRENT WORKING STATE of the application architectur
 
 -   **Daily Dashboard**: Real-time operational metrics
 -   **Monthly Dashboard**: Monthly performance analytics
--   **Yearly Dashboard**: Annual reporting and trends
+-   **Yearly Dashboard**: Annual reporting and trends with interactive ApexCharts visualizations
+    -   Budget Performance Bar Chart (Budget vs PO Sent comparison)
+    -   Budget Distribution Donut Chart (project allocation breakdown)
+    -   GRPO Completion Rate Bar Chart (color-coded performance indicators)
+    -   GRPO Gauge Chart (overall completion percentage)
+    -   NPI Production Index Bar Chart (incoming/outgoing comparison)
+    -   NPI Scatter Chart (production flow analysis)
+    -   Radar Chart (360° multi-metric performance view)
+    -   Individual chart export to PNG/SVG
+    -   Interactive tooltips, zoom, and pan capabilities
+    -   Responsive design for mobile and desktop
 -   **Other Dashboards**: Specialized views for different business units
 
 ### 3. User Management
@@ -162,7 +173,39 @@ All routes follow RESTful conventions with resource controllers:
 1. **Import**: Excel files → Validation → Database storage
 2. **Export**: Database queries → Excel/PDF generation → Download
 3. **Conversion**: POWITHETA data → Purchase Orders → Supplier relationships
-4. **Dashboard**: Real-time aggregation → Chart.js visualizations
+4. **Dashboard**: Real-time aggregation → Chart.js/ApexCharts visualizations
+5. **Yearly Dashboard**: Data aggregation → JSON encoding → ApexCharts rendering → Interactive charts
+
+### Yearly Dashboard Implementation Details
+
+**Controllers:**
+
+-   `DashboardYearlyController`: Main controller handling year selection and data routing
+-   `YearlyIndexController`: Processes current year data (include_projects: 017C, 021C, 022C, 023C, 025C, APS)
+-   `YearlyHistoryController`: Processes historical year data with same project inclusion
+
+**Data Flow:**
+
+1. User selects year → POST to `/dashboard/yearly`
+2. Controller determines current vs historical year
+3. Appropriate controller processes data (reguler, capex, grpo, npi metrics)
+4. Data passed to view via compact array
+5. Blade template JSON-encodes data for JavaScript
+6. ApexCharts library initializes 7 interactive charts
+7. Charts render with Indonesian number formatting and custom tooltips
+
+**Chart Export:**
+
+-   Individual chart export via ApexCharts dataURI() method
+-   Supports PNG and SVG formats
+-   Dashboard-wide export to Excel/PDF/CSV via backend routes
+
+**Key Technical Notes:**
+
+-   Scripts must load via @section('scripts') after jQuery
+-   Chart initialization delayed 500ms for library loading
+-   Select2 is optional with fallback handling
+-   Data transformation uses {!! json_encode() !!} to prevent HTML entity encoding
 
 ## Data Flow
 
