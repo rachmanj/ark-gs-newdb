@@ -84,3 +84,13 @@
 **Solution**: Integrated ApexCharts v3.45.1 library and created seven comprehensive chart types: (1) Budget Performance Bar Chart comparing Budget vs PO Sent, (2) Budget Distribution Donut Chart showing percentage breakdown, (3) GRPO Completion Rate Bar Chart with color-coded performance indicators, (4) GRPO Gauge Chart displaying overall completion percentage, (5) NPI Production Index Bar Chart comparing incoming/outgoing quantities, (6) NPI Scatter Chart for production flow analysis, (7) Radar Chart providing 360° multi-metric performance view. Implemented individual chart export functionality, interactive tooltips, zoom/pan capabilities, and responsive design.
 
 **Key Learning**: Chart library initialization must occur after jQuery loads - solved by moving scripts to @section('scripts') instead of inline. Data transformation from backend requires proper JSON encoding with {!! json_encode() !!} to prevent HTML entity issues. Chart instances should be stored globally for export functionality. Indonesian number formatting requires custom tooltip formatters using toLocaleString('id-ID'). ApexCharts provides excellent out-of-box interactivity but requires careful color coding for usability (red < 80%, yellow 80-95%, green > 95% for completion rates).
+
+---
+
+### [007] Monthly Dashboard Project 025C Inclusion (2025-01-16) ✅ COMPLETE
+
+**Challenge**: Project 025C was missing from monthly dashboard reports despite having valid data in the database. Same hardcoded array issue discovered in yearly dashboard also affected monthly dashboard.
+
+**Solution**: Updated MonthlyHistoryController::$include_projects array on line 11 to include '025C'. Also updated TestController for consistency. Verified database contains valid September 2025 data for project 025C (PO Sent: IDR 594,135.97K, Budget: IDR 317,035.90K, GRPO: IDR 354,459.17K, NPI: 4,143 in / 2,583 out).
+
+**Key Learning**: Project inclusion issue exists across multiple dashboard controllers (yearly, monthly, daily). After fixing yearly dashboard, must systematically check all dashboard-related controllers. Used grep search to identify all controllers with $include_projects arrays. Found and fixed MonthlyHistoryController and TestController. All dashboard controllers now consistently include project 025C: YearlyIndexController, YearlyHistoryController, MonthlyHistoryController, NpiController, GrpoIndexController, BudgetController, CapexController, TestController.

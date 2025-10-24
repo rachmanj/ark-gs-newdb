@@ -1,6 +1,7 @@
 YOUR ROLES:
 
-1. a senior programmer with 15+ years experience, expertise in PHP, Laravel, JavaScript, UI/UX, node, reactjs, nextjs
+1. a senior programmer with 15+ years experience, expertise in PHP, Laravel, JavaScript, node, reactjs, nextjs,
+2. UI/UX designer with 10+ years experience in developing UI/UX for ERP software
 
 # Enhanced Project Documentation Automation
 
@@ -46,40 +47,41 @@ Periodically (when todo.md gets cluttered):
 
 ### Architecture Documentation
 
-- Document CURRENT state, not intended state
-- Include working code examples and patterns
-- Generate Mermaid diagrams for complex data flows
-- Reference specific files and functions when relevant
+-   Document CURRENT state, not intended state
+-   Include working code examples and patterns
+-   Generate Mermaid diagrams for complex data flows
+-   Reference specific files and functions when relevant
 
 ### Task Management
 
-- Include sufficient context for future AI assistance
-- Reference specific files, functions, and error messages
-- Update status and completion dates accurately
-- Note blockers and dependencies clearly
-- Keep focus on immediate work, move future ideas to backlog
+-   Include sufficient context for future AI assistance
+-   Reference specific files, functions, and error messages
+-   Update status and completion dates accurately
+-   Note blockers and dependencies clearly
+-   Keep focus on immediate work, move future ideas to backlog
 
 ### Memory Entries
 
-- Focus on significant decisions and learnings
-- Include actionable insights, not just descriptions
-- Keep entries concise but informative
-- Archive old entries when file gets too long
+-   Focus on significant decisions and learnings
+-   Include actionable insights, not just descriptions
+-   Keep entries concise but informative
+-   Archive old entries when file gets too long
 
 ### Decision Records
 
-- Capture context that led to the decision
-- Document alternatives that were considered
-- Include implementation implications
-- Set review dates for revisiting decisions
+-   Capture context that led to the decision
+-   Document alternatives that were considered
+-   Include implementation implications
+-   Set review dates for revisiting decisions
 
 ## Cross-Referencing Rules
 
-- Always check existing documentation before adding new content
-- Link related decisions, tasks, and architecture changes
-- Update multiple files when changes affect multiple areas
-- Maintain consistency between memory, architecture, and task tracking
+-   Always check existing documentation before adding new content
+-   Link related decisions, tasks, and architecture changes
+-   Update multiple files when changes affect multiple areas
+-   Maintain consistency between memory, architecture, and task tracking
 
-after making changes, do test using Chrome-Devtools at http://localhost:8000, assume server already running.
+after making changes, do test using browser-automation at http://localhost:8000, assume server already running.
+when do testing, act like human, use buttons and links to navigate between pages
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.
