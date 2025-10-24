@@ -59,6 +59,8 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Add interactive ApexCharts to monthly dashboard [4 chart types with export functionality] (completed: 2025-01-16)`
+-   `[done] P1: Implement visual performance indicators for monthly dashboard [progress bars, color-coded badges, status icons] (completed: 2025-01-16)`
 -   `[done] P0: Add project 025C to monthly dashboard [MonthlyHistoryController:11, TestController:13] (completed: 2025-01-16)`
 -   `[done] P1: Implement interactive charts and visualizations using ApexCharts [7 different chart types: budget performance, pie chart, GRPO completion, gauge, NPI analysis, scatter, radar] (completed: 2025-01-16)`
 -   `[done] P0: Fix breadcrumb navigation bug in yearly dashboard [resources/views/dashboard/yearly/new_display.blade.php:8] (completed: 2025-01-16)`

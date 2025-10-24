@@ -21,7 +21,7 @@ class DashboardMonthlyController extends Controller
 
     public function display(Request $request)
     {
-        $projects = ['011C', '017C', '021C', '022C', '023C', '025C', 'APS'];
+        $projects = ['011C', '017C', '021C', '022C', '025C', 'APS', '023C'];
         $data = app(MonthlyHistoryController::class)->index($request->month);
 
         // Get data for the current year and next year for the chart

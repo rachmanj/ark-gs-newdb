@@ -94,3 +94,23 @@
 **Solution**: Updated MonthlyHistoryController::$include_projects array on line 11 to include '025C'. Also updated TestController for consistency. Verified database contains valid September 2025 data for project 025C (PO Sent: IDR 594,135.97K, Budget: IDR 317,035.90K, GRPO: IDR 354,459.17K, NPI: 4,143 in / 2,583 out).
 
 **Key Learning**: Project inclusion issue exists across multiple dashboard controllers (yearly, monthly, daily). After fixing yearly dashboard, must systematically check all dashboard-related controllers. Used grep search to identify all controllers with $include_projects arrays. Found and fixed MonthlyHistoryController and TestController. All dashboard controllers now consistently include project 025C: YearlyIndexController, YearlyHistoryController, MonthlyHistoryController, NpiController, GrpoIndexController, BudgetController, CapexController, TestController.
+
+---
+
+### [008] Monthly Dashboard UI Enhancement with Visual Performance Indicators (2025-01-16) ✅ COMPLETE
+
+**Challenge**: Monthly dashboard tables displayed raw data without visual context, making it difficult to quickly identify performance issues, trends, or critical metrics. Tables lacked visual hierarchy and status indicators.
+
+**Solution**: Implemented comprehensive visual performance indicator system across all monthly dashboard tables. Added color-coded status icons (check-circle, exclamation-triangle, times-circle), progress bars showing performance metrics with dynamic colors (green >95%, info 80-95%, warning 60-80%, danger <60%), status badges with descriptive labels (Excellent, Good, Attention, Critical), and enhanced table headers with gradient backgrounds. Created five-tier color coding system for budget performance and GRPO completion. Added contextual help with popover on NPI explaining the metric calculation. Implemented striped table styling with hover effects for better readability.
+
+**Key Learning**: Visual indicators significantly improve data comprehension - users can instantly identify issues without reading numbers. Progress bars work best when showing percentage completion with color coding. Status badges should use descriptive text not just colors for accessibility. Tooltips provide essential context without cluttering the UI. For over-budget items (>100%), display dual progress bars (solid + striped) to show the excess amount visually. AdminLTE gradient backgrounds (bg-gradient-info, bg-gradient-warning) provide professional polish to table headers.
+
+---
+
+### [009] Monthly Dashboard Interactive ApexCharts Implementation (2025-01-16) ✅ COMPLETE
+
+**Challenge**: Monthly dashboard lacked interactive visualizations to complement the enhanced visual indicators. Needed consistent charting approach across yearly and monthly dashboards for unified user experience.
+
+**Solution**: Integrated ApexCharts v3.45.1 into monthly dashboard with four comprehensive chart types: (1) Budget Performance Bar Chart comparing Budget vs PO Sent for all projects, (2) Budget Distribution Donut Chart showing percentage breakdown, (3) GRPO Completion Rate Bar Chart with dynamic color coding based on completion percentage, (4) NPI Production Index Bar Chart comparing incoming/outgoing quantities. Implemented individual chart export to PNG, Indonesian number formatting in tooltips, responsive design, and proper script loading after jQuery initialization.
+
+**Key Learning**: Reusing same charting library (ApexCharts) across different dashboards creates consistency and reduces learning curve. Monthly charts require similar but adapted configurations from yearly charts - smaller datasets mean simpler aggregations. Chart initialization timing is critical - must wait for both jQuery and ApexCharts to load before calling render methods. Export functionality works identically across dashboards when using same library. Color coordination between table indicators and charts (green=good, yellow=warning, red=critical) reinforces visual language consistency.
