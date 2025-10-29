@@ -59,6 +59,7 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P0: Add project 026C to daily dashboard [CapexController, GrpoIndexController, NpiController, BudgetController, YearlyIndexController, YearlyHistoryController, MonthlyHistoryController, DashboardMonthlyController, TestController] (completed: 2025-10-29)`
 -   `[done] P1: Add interactive ApexCharts to monthly dashboard [4 chart types with export functionality] (completed: 2025-01-16)`
 -   `[done] P1: Implement visual performance indicators for monthly dashboard [progress bars, color-coded badges, status icons] (completed: 2025-01-16)`
 -   `[done] P0: Add project 025C to monthly dashboard [MonthlyHistoryController:11, TestController:13] (completed: 2025-01-16)`

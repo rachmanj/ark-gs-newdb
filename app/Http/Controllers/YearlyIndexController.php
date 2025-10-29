@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class YearlyIndexController extends Controller
 {
-    public $include_projects = ['017C', '021C', '022C', '025C', 'APS', '023C'];
+    public $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
     private $included_dept_codes = ['40', '50', '60', '140', '200'];
     private $excluded_item_codes = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
     private $excluded_item_codes_with_co; // Will include 'CO%' for specific methods

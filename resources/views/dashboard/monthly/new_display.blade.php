@@ -220,9 +220,9 @@
                 </div>
             </div>
 
-            <!-- REGULER & PO SENT vs GRPO -->
+            <!-- REGULER -->
             <div class="row">
-                <div class="col-lg-6 mb-4">
+                <div class="col-12 mb-4">
                     <div class="card card-info card-outline shadow-sm">
                         <div class="card-header border-0 d-flex align-items-center">
                             <h3 class="card-title">
@@ -240,8 +240,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-lg-6 mb-4">
+            <!-- PO SENT vs GRPO -->
+            <div class="row">
+                <div class="col-12 mb-4">
                     <div class="card card-info card-outline shadow-sm">
                         <div class="card-header border-0 d-flex align-items-center">
                             <h3 class="card-title">
@@ -261,9 +264,9 @@
                 </div>
             </div>
 
-            <!-- NPI & CAPEX Data -->
+            <!-- NPI Index -->
             <div class="row">
-                <div class="col-lg-6 mb-4">
+                <div class="col-12 mb-4">
                     <div class="card card-warning card-outline shadow-sm">
                         <div class="card-header border-0 d-flex align-items-center">
                             <h3 class="card-title">
@@ -281,8 +284,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-lg-6 mb-4">
+            <!-- CAPEX -->
+            <div class="row">
+                <div class="col-12 mb-4">
                     <div class="card card-danger card-outline shadow-sm">
                         <div class="card-header border-0 d-flex align-items-center">
                             <h3 class="card-title">

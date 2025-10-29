@@ -114,3 +114,23 @@
 **Solution**: Integrated ApexCharts v3.45.1 into monthly dashboard with four comprehensive chart types: (1) Budget Performance Bar Chart comparing Budget vs PO Sent for all projects, (2) Budget Distribution Donut Chart showing percentage breakdown, (3) GRPO Completion Rate Bar Chart with dynamic color coding based on completion percentage, (4) NPI Production Index Bar Chart comparing incoming/outgoing quantities. Implemented individual chart export to PNG, Indonesian number formatting in tooltips, responsive design, and proper script loading after jQuery initialization.
 
 **Key Learning**: Reusing same charting library (ApexCharts) across different dashboards creates consistency and reduces learning curve. Monthly charts require similar but adapted configurations from yearly charts - smaller datasets mean simpler aggregations. Chart initialization timing is critical - must wait for both jQuery and ApexCharts to load before calling render methods. Export functionality works identically across dashboards when using same library. Color coordination between table indicators and charts (green=good, yellow=warning, red=critical) reinforces visual language consistency.
+
+---
+
+### [010] Project 026C Addition to All Dashboards (2025-10-29) ✅ COMPLETE
+
+**Challenge**: New project 026C needed to be added to all dashboard controllers to ensure complete data visibility across daily, monthly, and yearly dashboards.
+
+**Solution**: Systematically updated $include_projects arrays in nine controllers: CapexController (line 12), GrpoIndexController (line 11), NpiController (line 12), BudgetController (line 12 and methods at lines 17, 58, 89), YearlyIndexController (line 15), YearlyHistoryController (line 11), MonthlyHistoryController (line 11), DashboardMonthlyController (lines 24, 89), and TestController (line 13). Each controller now includes '026C' in the project list array following '025C' and before 'APS'.
+
+**Key Learning**: Project visibility is controlled by hardcoded $include_projects arrays across multiple dashboard controllers. When adding new projects, must systematically update all dashboard-related controllers to ensure consistency. The pattern established: projects are listed in numeric order (017C, 021C, 022C, 025C, 026C) followed by alphabetic codes (APS, 023C). Use grep to find all $include_projects arrays: `grep -r "include_projects" app/Http/Controllers`. Browser-based testing confirmed the changes work correctly before documentation updates.
+
+---
+
+### [011] NPI Index Logic Correction and Monthly Dashboard Layout Optimization (2025-10-29) ✅ COMPLETE
+
+**Challenge**: User feedback revealed NPI (Net Production Index) logic was inverted - lower index values should indicate better efficiency (less material waste), not higher values. Additionally, monthly dashboard cards needed full-width layout for better visibility and readability.
+
+**Solution**: Corrected NPI status thresholds in resources/views/dashboard/monthly/npi.blade.php: changed from >= comparisons to <= comparisons (Excellent: ≤0.85, Good: ≤1.0, Average: ≤1.2, Below Target: ≤1.5, Critical: >1.5). Updated tooltip text to clarify "Lower is better - less material input needed for same output". Modified resources/views/dashboard/monthly/new_display.blade.php to change all four card sections from col-lg-6 (half-width) to col-12 (full-width), stacking REGULER, PO SENT vs GRPO, NPI Index, and CAPEX vertically.
+
+**Key Learning**: Domain-specific metrics require validation with business users - mathematical logic may seem counterintuitive but reflects actual operational meaning. For NPI (Incoming/Outgoing ratio), lower values indicate better production efficiency as less raw material input is needed. Dashboard layout preferences vary by use case: side-by-side cards work for quick comparison, full-width cards provide better visibility for detailed data tables. Bootstrap grid system makes it easy to switch between layouts by changing col-\* classes. Always test inverted logic thoroughly - reversed thresholds and icon meanings (arrow-up becomes negative when lower is better).

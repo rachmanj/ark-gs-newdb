@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\Http;
 
 class BudgetController extends Controller
 {
-    public $include_projects = ['017C', '021C', '022C', '025C', 'APS', '023C'];
+    public $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
 
     public function index()
     {
         // $projects = Http::get('http://localhost:5000/projects')->json()['data'];
-        $projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
+        $projects = ['017C', '021C', '022C', '023C', '025C', '026C', 'APS'];
         $budget_types = BudgetType::orderBy('display_name')->get();
 
         return view('budget.index', compact('projects', 'budget_types'));
@@ -55,7 +55,7 @@ class BudgetController extends Controller
     {
         $budget = Budget::find($id);
         // $projects = Http::get('http://localhost:5000/projects')->json()['data'];
-        $projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
+        $projects = ['017C', '021C', '022C', '023C', '025C', '026C', 'APS'];
         $budget_types = BudgetType::orderBy('display_name')->get();
 
         return view('budget.edit', compact('budget', 'projects', 'budget_types'));
