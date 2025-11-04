@@ -10,7 +10,7 @@
 
 @section('styles')
     <!-- ApexCharts CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/apexcharts/apexcharts.css') }}">
     <style>
         .chart-container {
             background: white;
@@ -406,7 +406,7 @@
 
 @section('scripts')
     <!-- ApexCharts JavaScript Library -->
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+    <script src="{{ asset('adminlte/plugins/apexcharts/apexcharts.min.js') }}"></script>
 
     <!-- JavaScript for enhanced functionality -->
     <script>

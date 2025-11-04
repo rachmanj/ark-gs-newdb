@@ -259,3 +259,93 @@ Decision: [Title] - [YYYY-MM-DD]
 -   Added to architecture documentation for future reference
 
 **Review Date**: 2025-06-01 (when considering dashboard refactoring)
+
+---
+
+### Decision: Full-Width Preview Cards for Yearly Dashboard Index - 2025-10-31
+
+**Context**: Yearly dashboard index page needed enhancement to match monthly dashboard's rich preview functionality. Users required immediate visibility of current year data (REGULER, GRPO, NPI, CAPEX) without selecting a year, with clear visual indicators of performance status.
+
+**Options Considered**:
+
+1. **Side-by-Side Card Layout (col-lg-6)**:
+
+    - ✅ Pros: Compact view, shows multiple cards simultaneously on large screens
+    - ❌ Cons: Limited table width for detailed data, horizontal scrolling on smaller screens
+
+2. **Full-Width Stacked Cards (col-12)**:
+
+    - ✅ Pros: Maximum visibility for detailed tables, no horizontal scrolling, better readability on all screen sizes
+    - ❌ Cons: More vertical scrolling required
+
+3. **Tabbed Interface**:
+    - ✅ Pros: Minimal screen space, organized sections
+    - ❌ Cons: Hidden content requires clicks, less immediate visibility
+
+**Decision**: Full-width stacked cards (col-12) with vertical arrangement: REGULER, GRPO, NPI, CAPEX
+
+**Rationale**: Full-width cards provide optimal visibility for complex data tables with multiple columns (Project, PO Sent, Budget, Performance bars, Status badges). Vertical stacking ensures all data is immediately visible on page load without requiring interaction. This matches the monthly dashboard's successful full-width layout pattern (learned from MEMORY.md entry #011) and accommodates responsive design across all device sizes. Progress bars and status badges require sufficient width to display clearly, which full-width layout provides.
+
+**Implementation**:
+
+-   Created four preview card blade files in `resources/views/dashboard/yearly/preview/`:
+    -   `reguler.blade.php`: Budget vs PO Sent with gradient header, progress bars, color-coded status badges (Success/Warning/Critical)
+    -   `grpo.blade.php`: PO Sent vs GRPO completion rates with visual indicators
+    -   `npi.blade.php`: Production efficiency index with info tooltip, lower-is-better logic
+    -   `capex.blade.php`: Capital expenditure tracking
+-   Updated `DashboardYearlyController`:
+    -   Added `getCurrentYearPreviewData()` method calling `YearlyIndexController::index()`
+    -   Modified `index()` method to pass `$data` to view
+-   Updated `resources/views/dashboard/yearly/index.blade.php`:
+    -   Stacked cards in full-width rows (col-12 instead of col-lg-6)
+    -   Ordered as: REGULER, GRPO, NPI, CAPEX
+    -   Added "Current Year Preview (2025)" header with "Live Data" badge
+-   Reused monthly dashboard card styling:
+    -   Progress bars with color-coded statuses
+    -   Gradient table headers (bg-gradient-info, bg-gradient-primary, bg-gradient-warning, bg-gradient-secondary)
+    -   Status badges with icons
+    -   Tooltips for additional context
+-   Browser-tested for loading performance and visual presentation
+
+**Review Date**: 2026-04-01 (when planning dashboard redesign)
+
+---
+
+### Decision: Local Assets Instead of CDN for Dashboard Libraries - 2025-10-31
+
+**Context**: Dashboard visualizations were loading Chart.js and ApexCharts from external CDN (cdn.jsdelivr.net), creating external dependencies and potential performance/availability concerns. Need for offline capability and better control over library versions.
+
+**Options Considered**:
+
+1. **Continue Using CDN**:
+
+    - ✅ Pros: Automatic updates, potential browser caching across sites, no local storage needed
+    - ❌ Cons: External dependency, network required, potential service outages, version changes can break functionality
+
+2. **Local Assets from AdminLTE Plugins**:
+
+    - ✅ Pros: No external dependency, works offline, version control, faster loading (no DNS lookup), predictable behavior
+    - ❌ Cons: Manual updates required, larger repository size, need to download missing libraries
+
+3. **NPM with Build Process**:
+    - ✅ Pros: Dependency management, automated updates, tree-shaking possible
+    - ❌ Cons: Requires build step, more complex deployment, larger overhead for small changes
+
+**Decision**: Local assets from public/adminlte/plugins folder
+
+**Rationale**: Local assets provide better reliability, offline capability, and version control. AdminLTE already includes Chart.js, so leveraging existing infrastructure is logical. For ApexCharts, downloading to same plugin structure maintains consistency. This approach eliminates external dependencies that could impact dashboard availability, which is critical for operational monitoring.
+
+**Implementation**:
+
+-   **Chart.js** (already available in AdminLTE):
+    -   Updated references in 3 files to use `{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}`
+    -   Files: dashboard/monthly/index.blade.php, dashboard/monthly/new_display.blade.php, dashboard/yearly/index.blade.php
+-   **ApexCharts v3.45.1** (downloaded):
+    -   Created `public/adminlte/plugins/apexcharts/` directory
+    -   Downloaded apexcharts.min.js and apexcharts.css from jsdelivr CDN
+    -   Updated references in 2 files to use local assets
+    -   Files: dashboard/monthly/new_display.blade.php, dashboard/yearly/new_display.blade.php
+-   Used Laravel's asset() helper for proper URL generation
+-   Maintained AdminLTE plugin folder structure for consistency
+
+**Review Date**: 2026-10-01

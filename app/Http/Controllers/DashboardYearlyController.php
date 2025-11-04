@@ -17,7 +17,11 @@ class DashboardYearlyController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        return view('dashboard.yearly.index', compact('years'));
+        $multiYearData = $this->getMultiYearChartData();
+        $currentYearStats = $this->getCurrentYearStats();
+        $data = $this->getCurrentYearPreviewData();
+
+        return view('dashboard.yearly.index', compact('years', 'multiYearData', 'currentYearStats', 'data'));
     }
 
     public function display(Request $request)
@@ -211,5 +215,125 @@ class DashboardYearlyController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '.csv"',
         ]);
+    }
+
+    private function getMultiYearChartData()
+    {
+        $currentYear = Carbon::now()->year;
+        $years = [];
+        $budgetData = [];
+        $poSentData = [];
+        $grpoData = [];
+        
+        $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+
+        for ($i = 4; $i >= 0; $i--) {
+            $year = $currentYear - $i;
+            $years[] = $year;
+
+            $budget = DB::table('budgets')
+                ->whereIn('project_code', $include_projects)
+                ->where('budget_type_id', 2)
+                ->whereYear('date', $year)
+                ->sum('amount');
+            $budgetData[] = round($budget / 1000, 2);
+
+            $poSent = DB::table('histories')
+                ->whereIn('project_code', $include_projects)
+                ->where('periode', 'yearly')
+                ->where('gs_type', 'po_sent')
+                ->whereYear('date', $year)
+                ->sum('amount');
+            $poSentData[] = round($poSent / 1000, 2);
+
+            $grpo = DB::table('histories')
+                ->whereIn('project_code', $include_projects)
+                ->where('periode', 'yearly')
+                ->where('gs_type', 'grpo_amount')
+                ->whereYear('date', $year)
+                ->sum('amount');
+            $grpoData[] = round($grpo / 1000, 2);
+        }
+
+        return [
+            'labels' => $years,
+            'datasets' => [
+                [
+                    'label' => 'Budget',
+                    'data' => $budgetData,
+                    'borderColor' => 'rgba(210, 214, 222, 1)',
+                    'backgroundColor' => 'rgba(210, 214, 222, 0.2)',
+                    'fill' => true,
+                    'tension' => 0.4
+                ],
+                [
+                    'label' => 'PO Sent',
+                    'data' => $poSentData,
+                    'borderColor' => 'rgba(60, 141, 188, 1)',
+                    'backgroundColor' => 'rgba(60, 141, 188, 0.2)',
+                    'fill' => true,
+                    'tension' => 0.4
+                ],
+                [
+                    'label' => 'GRPO',
+                    'data' => $grpoData,
+                    'borderColor' => 'rgba(0, 166, 90, 1)',
+                    'backgroundColor' => 'rgba(0, 166, 90, 0.2)',
+                    'fill' => true,
+                    'tension' => 0.4
+                ]
+            ]
+        ];
+    }
+
+    private function getCurrentYearStats()
+    {
+        $currentYear = Carbon::now()->year;
+        $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+
+        $totalBudget = DB::table('budgets')
+            ->whereIn('project_code', $include_projects)
+            ->where('budget_type_id', 2)
+            ->whereYear('date', $currentYear)
+            ->sum('amount');
+
+        $totalPoSent = DB::table('histories')
+            ->whereIn('project_code', $include_projects)
+            ->where('periode', 'yearly')
+            ->where('gs_type', 'po_sent')
+            ->whereYear('date', $currentYear)
+            ->sum('amount');
+
+        $totalGrpo = DB::table('histories')
+            ->whereIn('project_code', $include_projects)
+            ->where('periode', 'yearly')
+            ->where('gs_type', 'grpo_amount')
+            ->whereYear('date', $currentYear)
+            ->sum('amount');
+
+        $budgetPerformance = $totalBudget > 0 ? ($totalPoSent / $totalBudget) * 100 : 0;
+
+        $npiData = app(YearlyIndexController::class)->index();
+        $productionIndex = $npiData['npi']['total_percentage'] ?? 0;
+
+        return [
+            'totalBudget' => $totalBudget,
+            'totalPoSent' => $totalPoSent,
+            'totalGrpo' => $totalGrpo,
+            'budgetPerformance' => $budgetPerformance,
+            'productionIndex' => $productionIndex
+        ];
+    }
+
+    private function getCurrentYearPreviewData()
+    {
+        $currentYearData = app(YearlyIndexController::class)->index();
+        
+        return [
+            'reguler' => $currentYearData['reguler'],
+            'capex' => $currentYearData['capex'],
+            'grpo' => $currentYearData['grpo'],
+            'npi' => $currentYearData['npi']
+        ];
     }
 }

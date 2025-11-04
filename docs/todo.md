@@ -59,6 +59,8 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Migrate dashboard libraries from CDN to local assets [Chart.js and ApexCharts in public/adminlte/plugins; updated 5 blade files] (completed: 2025-10-31)`
+-   `[done] P1: Enhance yearly dashboard index with preview cards [DashboardYearlyController: getMultiYearChartData(), getCurrentYearStats(), getCurrentYearPreviewData(); resources/views/dashboard/yearly/index.blade.php; resources/views/dashboard/yearly/preview/*.blade.php] (completed: 2025-10-31)`
 -   `[done] P0: Add project 026C to daily dashboard [CapexController, GrpoIndexController, NpiController, BudgetController, YearlyIndexController, YearlyHistoryController, MonthlyHistoryController, DashboardMonthlyController, TestController] (completed: 2025-10-29)`
 -   `[done] P1: Add interactive ApexCharts to monthly dashboard [4 chart types with export functionality] (completed: 2025-01-16)`
 -   `[done] P1: Implement visual performance indicators for monthly dashboard [progress bars, color-coded badges, status icons] (completed: 2025-01-16)`

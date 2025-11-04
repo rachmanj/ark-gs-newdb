@@ -65,8 +65,10 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **Database**: MySQL with Eloquent ORM
 -   **Authentication**: Laravel Sanctum with Spatie Permission package
 -   **Data Processing**: Laravel Excel (Maatwebsite) for import/export operations
--   **UI Components**: DataTables (Yajra) for dynamic tables, Chart.js for basic visualizations
--   **Data Visualization**: ApexCharts v3.45.1 for interactive charts (yearly dashboard)
+-   **UI Components**: DataTables (Yajra) for dynamic tables
+-   **Data Visualization**: 
+    -   Chart.js (local asset: public/adminlte/plugins/chart.js/) for basic visualizations
+    -   ApexCharts v3.45.1 (local asset: public/adminlte/plugins/apexcharts/) for interactive charts
 -   **PDF Generation**: DomPDF for report generation
 -   **Asset Compilation**: Laravel Mix with Webpack
 
@@ -84,17 +86,29 @@ This document describes the CURRENT WORKING STATE of the application architectur
 
 -   **Daily Dashboard**: Real-time operational metrics
 -   **Monthly Dashboard**: Monthly performance analytics
--   **Yearly Dashboard**: Annual reporting and trends with interactive ApexCharts visualizations
-    -   Budget Performance Bar Chart (Budget vs PO Sent comparison)
-    -   Budget Distribution Donut Chart (project allocation breakdown)
-    -   GRPO Completion Rate Bar Chart (color-coded performance indicators)
-    -   GRPO Gauge Chart (overall completion percentage)
-    -   NPI Production Index Bar Chart (incoming/outgoing comparison)
-    -   NPI Scatter Chart (production flow analysis)
-    -   Radar Chart (360° multi-metric performance view)
-    -   Individual chart export to PNG/SVG
-    -   Interactive tooltips, zoom, and pan capabilities
-    -   Responsive design for mobile and desktop
+-   **Yearly Dashboard**: Annual reporting and trends with comprehensive index page
+    -   **Index Page** (`resources/views/dashboard/yearly/index.blade.php`):
+        -   Year selection card with modern dropdown interface
+        -   Information card explaining dashboard features
+        -   Quick links navigation to Daily, Monthly, Summary by Unit, Search PO
+        -   Current year preview cards (full-width, stacked vertically):
+            -   REGULER card: Budget vs PO Sent with progress bars and status badges
+            -   GRPO card: Completion rates with color-coded performance indicators
+            -   NPI Index card: Production efficiency with lower-is-better logic
+            -   CAPEX card: Capital expenditure tracking
+        -   Multi-year performance chart showing 5-year trends (Budget, PO Sent, GRPO)
+    -   **Display Page** (`resources/views/dashboard/yearly/new_display.blade.php`):
+        -   Interactive ApexCharts visualizations (7 chart types)
+        -   Budget Performance Bar Chart (Budget vs PO Sent comparison)
+        -   Budget Distribution Donut Chart (project allocation breakdown)
+        -   GRPO Completion Rate Bar Chart (color-coded performance indicators)
+        -   GRPO Gauge Chart (overall completion percentage)
+        -   NPI Production Index Bar Chart (incoming/outgoing comparison)
+        -   NPI Scatter Chart (production flow analysis)
+        -   Radar Chart (360° multi-metric performance view)
+        -   Individual chart export to PNG/SVG
+        -   Interactive tooltips, zoom, and pan capabilities
+        -   Responsive design for mobile and desktop
 -   **Other Dashboards**: Specialized views for different business units
 
 ### 3. User Management

@@ -54,7 +54,7 @@ class PowithetaController extends Controller
         } catch (\Exception $e) {
             // Make sure to re-enable foreign key checks even if an error occurs
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
-            
+
             return redirect()->route('powitheta.index')->with('error', 'Error truncating data: ' . $e->getMessage());
         }
     }
@@ -74,7 +74,7 @@ class PowithetaController extends Controller
     {
         // Increase max execution time for large imports
         ini_set('max_execution_time', 300); // 5 minutes
-        
+
         // validasi
         $this->validate($request, [
             'file_upload' => 'required|mimes:xls,xlsx'
@@ -109,15 +109,15 @@ class PowithetaController extends Controller
 
             // import data
             Excel::import(new PowithetaImport, $filePath);
-            
+
             // Call convert_to_po method to process the imported data
             $convertResult = $this->performConvertToPo();
-            
+
             // Delete the file after successful import and conversion
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'import_message' => 'Data Excel Berhasil Diimport!',
@@ -125,14 +125,13 @@ class PowithetaController extends Controller
                 'convert_message' => $convertResult['message'],
                 'file_cleaned' => true
             ]);
-            
         } catch (\Exception $e) {
             // Try to clean up the file even if there was an error
             $filePath = isset($filePath) ? $filePath : null;
             if ($filePath && file_exists($filePath)) {
                 unlink($filePath);
             }
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error during import: ' . $e->getMessage(),
@@ -145,7 +144,7 @@ class PowithetaController extends Controller
     {
         // Increase max execution time for large imports
         ini_set('max_execution_time', 300); // 5 minutes
-        
+
         // validasi
         $this->validate($request, [
             'file_upload' => 'required|mimes:xls,xlsx'
@@ -306,7 +305,7 @@ class PowithetaController extends Controller
         } catch (\Exception $e) {
             $progress = 0;
         }
-        
+
         return response()->json([
             'progress' => $progress
         ]);
@@ -317,8 +316,8 @@ class PowithetaController extends Controller
     {
         try {
             // Increase max execution time for large conversion operations
-            ini_set('max_execution_time', 300); // 5 minutes
-            
+            ini_set('max_execution_time', 600); // 5 minutes
+
             // Get all unique PO records grouped by PO number
             $poGroups = Powitheta::select(
                 'po_no',
@@ -420,10 +419,9 @@ class PowithetaController extends Controller
 
             return [
                 'success' => true,
-                'message' => "Successfully converted {$importedCount} Purchase Orders" . 
-                            ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : "")
+                'message' => "Successfully converted {$importedCount} Purchase Orders" .
+                    ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : "")
             ];
-
         } catch (\Exception $e) {
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
             return [

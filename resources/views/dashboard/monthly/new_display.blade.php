@@ -11,7 +11,7 @@
 
 @section('styles')
     <!-- ApexCharts CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/apexcharts/apexcharts.css') }}">
     <style>
         .badge-lg {
             font-size: 0.9rem;
@@ -434,10 +434,10 @@
 
 @section('scripts')
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('adminlte/plugins/chart.js/Chart.min.js') }}"></script>
 
     <!-- ApexCharts -->
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+    <script src="{{ asset('adminlte/plugins/apexcharts/apexcharts.min.js') }}"></script>
 
     <script>
         $(document).ready(function() {
