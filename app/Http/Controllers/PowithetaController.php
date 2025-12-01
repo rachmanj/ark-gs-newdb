@@ -7,6 +7,7 @@ use App\Exports\PowithetaExportThisYear;
 use App\Exports\PowithetaSummaryExport;
 use App\Imports\PowithetaImport;
 use App\Models\Powitheta;
+use App\Services\SapService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -68,6 +69,129 @@ class PowithetaController extends Controller
 
         return $pos_toclean;
         // return redirect()->route('powitheta.index')->with('success', 'Old DB has been cleaned.');
+    }
+
+    public function sync_from_sap(Request $request)
+    {
+        try {
+            ini_set('max_execution_time', 600);
+
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $startDate = !empty($startDate) ? $startDate : null;
+            $endDate = !empty($endDate) ? $endDate : null;
+
+            $sapService = new SapService();
+            $results = $sapService->executePowithetaSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No data found for the selected date range.'
+                    ], 200);
+                }
+                return redirect()->route('powitheta.index')->with('error', 'No data found for the selected date range.');
+            }
+
+            $importedCount = 0;
+            $totalRecords = count($results);
+
+            DB::beginTransaction();
+
+            try {
+                foreach ($results as $row) {
+                    $powithetaData = [
+                        'po_no' => $row->po_no ?? null,
+                        'create_date' => $this->convertSqlDate($row->create_date ?? null),
+                        'posting_date' => $this->convertSqlDate($row->posting_date ?? null),
+                        'po_delivery_date' => $this->convertSqlDate($row->po_delivery_date ?? null),
+                        'po_eta' => $this->convertSqlDate($row->po_eta ?? null),
+                        'pr_no' => $row->pr_no ?? null,
+                        'vendor_code' => $row->vendor_code ?? null,
+                        'vendor_name' => $row->vendor_name ?? null,
+                        'unit_no' => $row->unit_no ?? null,
+                        'item_code' => $row->item_code ?? null,
+                        'uom' => $row->uom ?? null,
+                        'description' => $row->description ?? null,
+                        'qty' => $row->qty ?? null,
+                        'unit_price' => $row->unit_price ?? null,
+                        'project_code' => $row->project_code ?? null,
+                        'dept_code' => $row->dept_code ?? null,
+                        'po_currency' => $row->po_currency ?? null,
+                        'item_amount' => $row->item_amount ?? null,
+                        'total_po_price' => $row->total_po_price ?? null,
+                        'po_with_vat' => $row->po_with_vat ?? null,
+                        'po_status' => $row->po_status ?? null,
+                        'po_delivery_status' => $row->po_delivery_status ?? null,
+                        'budget_type' => $row->budget_type ?? null,
+                        'batch' => 1,
+                    ];
+
+                    Powitheta::create($powithetaData);
+                    $importedCount++;
+                }
+
+                DB::commit();
+
+                // Call convert_to_po method to process the imported data
+                $convertResult = $this->performConvertToPo();
+
+                $message = "Successfully synced {$importedCount} Powitheta records from SAP.";
+                if ($convertResult['success']) {
+                    $message .= " " . $convertResult['message'];
+                }
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message,
+                        'imported_count' => $importedCount,
+                        'total_records' => $totalRecords,
+                        'convert_success' => $convertResult['success'],
+                        'convert_message' => $convertResult['message']
+                    ], 200);
+                }
+
+                return redirect()->route('powitheta.index')->with('success', $message);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            $errorMessage = 'Error syncing from SAP: ' . $e->getMessage();
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 500);
+            }
+            
+            return redirect()->route('powitheta.index')->with('error', $errorMessage);
+        }
+    }
+
+    private function convertSqlDate($date)
+    {
+        if (!$date) {
+            return null;
+        }
+
+        if ($date instanceof \DateTime) {
+            return $date->format('Y-m-d');
+        }
+
+        if (is_string($date)) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     public function import_excel(Request $request)

@@ -1,7 +1,8 @@
 YOUR ROLES:
 
 1. a senior programmer with 15+ years experience, expertise in PHP, Laravel, JavaScript, node, reactjs, nextjs,
-2. UI/UX designer with 10+ years experience in developing UI/UX for ERP software
+2. UI/UX designer with 10+ years experience in developing UI/UX for ERP software,
+3. SAP B1 senior programmer and consultant with 15+ experience including development software to integrate with SAP B1
 
 # Enhanced Project Documentation Automation
 
@@ -81,7 +82,7 @@ Periodically (when todo.md gets cluttered):
 -   Update multiple files when changes affect multiple areas
 -   Maintain consistency between memory, architecture, and task tracking
 
-after making changes, do test using chrome-devtools MCP at http://localhost:8000, assume server already running.
+after making changes, do test using chrome-devtools MCP or cursor's brwoser automation at http://localhost:8000, assume server already running.
 when do testing, act like human, use buttons and links to navigate between pages
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.

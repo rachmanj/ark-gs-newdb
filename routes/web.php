@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [PowithetaController::class, 'show'])->name('show');
         Route::post('/import_excel', [PowithetaController::class, 'import_excel'])->name('import_excel');
         Route::post('/import_oldDB', [PowithetaController::class, 'import_oldDB'])->name('import_oldDB');
+        Route::post('/sync_from_sap', [PowithetaController::class, 'sync_from_sap'])->name('sync_from_sap');
         Route::get('/progress', [PowithetaController::class, 'get_progress'])->name('progress');
     });
 
@@ -114,6 +115,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/this_year', [GrpoController::class, 'index_this_year'])->name('index_this_year');
         Route::get('/{id}', [GrpoController::class, 'show'])->name('show');
         Route::post('/import_excel', [GrpoController::class, 'import_excel'])->name('import_excel');
+        Route::post('/sync_from_sap', [GrpoController::class, 'sync_from_sap'])->name('sync_from_sap');
     });
 
     Route::prefix('migi')->name('migi.')->group(function () {
@@ -126,6 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/this_year', [MigiController::class, 'index_this_year'])->name('index_this_year');
         Route::get('/{id}', [MigiController::class, 'show'])->name('show');
         Route::post('/import_excel', [MigiController::class, 'import_excel'])->name('import_excel');
+        Route::post('/sync_from_sap', [MigiController::class, 'sync_from_sap'])->name('sync_from_sap');
     });
 
     Route::prefix('incoming')->name('incoming.')->group(function () {
@@ -138,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/this_year', [IncomingController::class, 'index_this_year'])->name('index_this_year');
         Route::get('/{id}', [IncomingController::class, 'show'])->name('show');
         Route::post('/import_excel', [IncomingController::class, 'import_excel'])->name('import_excel');
+        Route::post('/sync_from_sap', [IncomingController::class, 'sync_from_sap'])->name('sync_from_sap');
     });
 
     Route::prefix('daily-production')->name('daily-production.')->group(function () {

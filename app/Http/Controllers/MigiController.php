@@ -6,8 +6,10 @@ use App\Exports\MigiExport;
 use App\Exports\MigiExportThisYear;
 use App\Imports\MigiImport;
 use App\Models\Migi;
+use App\Services\SapService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MigiController extends Controller
@@ -39,6 +41,104 @@ class MigiController extends Controller
         Migi::truncate();
 
         return redirect()->route('migi.index')->with('success', 'Data has been truncated.');
+    }
+
+    public function sync_from_sap(Request $request)
+    {
+        try {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $startDate = !empty($startDate) ? $startDate : null;
+            $endDate = !empty($endDate) ? $endDate : null;
+
+            $sapService = new SapService();
+            $results = $sapService->executeMigiSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No data found for the selected date range.'
+                    ], 200);
+                }
+                return redirect()->route('migi.index')->with('error', 'No data found for the selected date range.');
+            }
+
+            $importedCount = 0;
+            $totalRecords = count($results);
+
+            DB::beginTransaction();
+
+            try {
+                foreach ($results as $row) {
+                    $migiData = [
+                        'posting_date' => $this->convertSqlDate($row->posting_date ?? null),
+                        'doc_type' => $row->doc_type ?? null,
+                        'doc_no' => $row->doc_no ?? null,
+                        'project_code' => $row->project_code ?? null,
+                        'dept_code' => $row->dept_code ?? null,
+                        'item_code' => $row->item_code ?? null,
+                        'qty' => $row->qty ?? null,
+                        'uom' => $row->uom ?? null,
+                        'batch' => 1,
+                    ];
+
+                    Migi::create($migiData);
+                    $importedCount++;
+                }
+
+                DB::commit();
+
+                $message = "Successfully synced {$importedCount} Migi records from SAP.";
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message,
+                        'imported_count' => $importedCount,
+                        'total_records' => $totalRecords
+                    ], 200);
+                }
+
+                return redirect()->route('migi.index')->with('success', $message);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            $errorMessage = 'Error syncing from SAP: ' . $e->getMessage();
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 500);
+            }
+            
+            return redirect()->route('migi.index')->with('error', $errorMessage);
+        }
+    }
+
+    private function convertSqlDate($date)
+    {
+        if (!$date) {
+            return null;
+        }
+
+        if ($date instanceof \DateTime) {
+            return $date->format('Y-m-d');
+        }
+
+        if (is_string($date)) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     public function import_excel(Request $request)

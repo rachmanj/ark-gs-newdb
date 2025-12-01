@@ -6,8 +6,10 @@ use App\Exports\GrpoExport;
 use App\Exports\GrpoExportThisYear;
 use App\Imports\GrpoImport;
 use App\Models\Grpo;
+use App\Services\SapService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class GrpoController extends Controller
@@ -41,6 +43,116 @@ class GrpoController extends Controller
         return redirect()->route('grpo.index')->with('success', 'Table has been truncated.');
     }
 
+    public function sync_from_sap(Request $request)
+    {
+        try {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            // Convert empty strings to null
+            $startDate = !empty($startDate) ? $startDate : null;
+            $endDate = !empty($endDate) ? $endDate : null;
+
+            $sapService = new SapService();
+            $results = $sapService->executeGrpoSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No data found for the selected date range.'
+                    ], 200);
+                }
+                return redirect()->route('grpo.index')->with('error', 'No data found for the selected date range.');
+            }
+
+            $importedCount = 0;
+            $skippedCount = 0;
+            $totalRecords = count($results);
+
+            DB::beginTransaction();
+
+            try {
+                foreach ($results as $row) {
+                    $grpoData = [
+                        'po_no' => $row->po_no ?? null,
+                        'po_date' => $this->convertSqlDate($row->po_date ?? null),
+                        'po_delivery_date' => $this->convertSqlDate($row->po_delivery_date ?? null),
+                        'grpo_date' => $this->convertSqlDate($row->grpo_date ?? null),
+                        'po_delivery_status' => $row->po_delivery_status ?? null,
+                        'grpo_no' => $row->grpo_no ?? null,
+                        'vendor_code' => $row->vendor_code ?? null,
+                        'unit_no' => $row->unit_no ?? null,
+                        'item_code' => $row->item_code ?? null,
+                        'uom' => $row->uom ?? null,
+                        'description' => $row->description ?? null,
+                        'qty' => $row->qty ?? null,
+                        'grpo_currency' => $row->grpo_currency ?? null,
+                        'unit_price' => $row->unit_price ?? null,
+                        'item_amount' => $row->item_amount ?? null,
+                        'project_code' => $row->project_code ?? null,
+                        'dept_code' => $row->dept_code ?? null,
+                        'remarks' => $row->remarks ?? null,
+                        'batch' => 1,
+                    ];
+
+                    Grpo::create($grpoData);
+                    $importedCount++;
+                }
+
+                DB::commit();
+
+                $message = "Successfully synced {$importedCount} GRPO records from SAP.";
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message,
+                        'imported_count' => $importedCount,
+                        'total_records' => $totalRecords
+                    ], 200);
+                }
+
+                return redirect()->route('grpo.index')->with('success', $message);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            $errorMessage = 'Error syncing from SAP: ' . $e->getMessage();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 500);
+            }
+
+            return redirect()->route('grpo.index')->with('error', $errorMessage);
+        }
+    }
+
+    private function convertSqlDate($date)
+    {
+        if (!$date) {
+            return null;
+        }
+
+        if ($date instanceof \DateTime) {
+            return $date->format('Y-m-d');
+        }
+
+        if (is_string($date)) {
+            try {
+                return Carbon::parse($date)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     public function import_excel(Request $request)
     {
         // validasi
@@ -69,7 +181,7 @@ class GrpoController extends Controller
         try {
             // import data
             Excel::import(new GrpoImport, $filePath);
-            
+
             // Delete the temporary file after successful import
             if (file_exists($filePath)) {
                 unlink($filePath);
@@ -82,7 +194,7 @@ class GrpoController extends Controller
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
-            
+
             return redirect()->route('grpo.index')->with('error', 'Error saat import: ' . $e->getMessage());
         }
     }

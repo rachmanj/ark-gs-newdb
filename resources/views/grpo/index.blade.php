@@ -19,16 +19,23 @@
                             {{ Session::get('success') }}
                         </div>
                     @endif
+                    @if (Session::has('error'))
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ Session::get('error') }}
+                        </div>
+                    @endif
                     <a href="#"><b>THIS MONTH </b></a> |
                     <a href="{{ route('grpo.index_this_year') }}">This Year</a>
 
                     @can('upload_data')
-                        <a href="{{ route('grpo.truncate') }}"
-                            class="btn btn-sm btn-danger float-right {{ $is_data === 1 ? '' : 'disabled' }}"
-                            onclick="return confirm('Are You sure You want to delete all records?')"><i
-                                class="fas fa-trash"></i> Truncate Table</a>
+                        <button type="button" class="btn btn-sm btn-danger float-right {{ $is_data === 1 ? '' : 'disabled' }}"
+                            onclick="confirmTruncate()" {{ $is_data === 1 ? '' : 'disabled' }}><i
+                                class="fas fa-trash"></i> Truncate Table</button>
                         <button class="btn btn-sm btn-success float-right mx-2" data-toggle="modal" data-target="#modal-upload"
                             {{ $is_data === 1 ? 'disabled' : '' }}><i class="fas fa-upload"></i> Upload</button>
+                        <button class="btn btn-sm btn-primary float-right mx-2" data-toggle="modal" data-target="#modal-sync"
+                            {{ $is_data === 1 ? 'disabled' : '' }}><i class="fas fa-sync"></i> Sync from SAP</button>
                     @endcan
 
                     <a href="{{ route('grpo.export_this_month') }}"
@@ -85,6 +92,41 @@
             </div><!-- /.modal-content -->
         </div> <!-- /.modal-dialog -->
     </div> <!-- /.modal -->
+
+    <div class="modal fade" id="modal-sync">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Sync GRPO from SAP</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('grpo.sync_from_sap') }}" method="POST" id="syncForm">
+                    @csrf
+                    <div class="modal-body">
+                        <p>Sync GRPO data from SAP SQL Server. Default date range: First day of current year to today.</p>
+                        <div class="form-group">
+                            <label>Start Date (Optional)</label>
+                            <input type="date" name="start_date" class="form-control" 
+                                value="{{ \Carbon\Carbon::now()->startOfYear()->format('Y-m-d') }}">
+                            <small class="form-text text-muted">Leave empty to use first day of current year</small>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date (Optional)</label>
+                            <input type="date" name="end_date" class="form-control" 
+                                value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+                            <small class="form-text text-muted">Leave empty to use today</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-sm btn-primary" onclick="submitSync(event)">Sync from SAP</button>
+                    </div>
+                </form>
+            </div><!-- /.modal-content -->
+        </div> <!-- /.modal-dialog -->
+    </div> <!-- /.modal -->
 @endsection
 
 @section('styles')
@@ -109,6 +151,25 @@
 
     <script>
         $(function() {
+            // Show SweetAlert for success/error messages
+            @if (Session::has('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: '{{ Session::get('success') }}',
+                    confirmButtonColor: '#3085d6',
+                });
+            @endif
+
+            @if (Session::has('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: '{{ Session::get('error') }}',
+                    confirmButtonColor: '#d33',
+                });
+            @endif
+
             $("#grpo").DataTable({
                 processing: true,
                 serverSide: true,
@@ -175,6 +236,133 @@
 
             // Submit the form
             document.getElementById('importForm').submit();
+        }
+
+        function confirmTruncate() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This will delete all GRPO records. This action cannot be undone!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, truncate it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '{{ route('grpo.truncate') }}';
+                }
+            });
+        }
+
+        function submitSync(event) {
+            event.preventDefault();
+
+            const form = document.getElementById('syncForm');
+            const startDate = form.querySelector('input[name="start_date"]').value;
+            const endDate = form.querySelector('input[name="end_date"]').value;
+
+            // Close the modal first
+            $('#modal-sync').modal('hide');
+
+            // Show progress bar immediately
+            let progress = 0;
+            
+            Swal.fire({
+                title: 'Syncing from SAP...',
+                html: `
+                    <div style="text-align: left;">
+                        <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server...</p>
+                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date Range:</strong> ${startDate || 'First day of current year'} to ${endDate || 'Today'}</p>
+                        <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
+                            <div id="progress-bar" style="background: linear-gradient(90deg, #3085d6 0%, #5dade2 100%); height: 100%; width: ${progress}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                ${Math.round(progress)}%
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: #666; margin: 0;">Please wait, this may take a few moments...</p>
+                    </div>
+                `,
+                icon: null,
+                showCancelButton: false,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90; // Don't go to 100% until done
+                
+                Swal.update({
+                    html: `
+                        <div style="text-align: left;">
+                            <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server...</p>
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date Range:</strong> ${startDate || 'First day of current year'} to ${endDate || 'Today'}</p>
+                            <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
+                                <div id="progress-bar" style="background: linear-gradient(90deg, #3085d6 0%, #5dade2 100%); height: 100%; width: ${progress}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                    ${Math.round(progress)}%
+                                </div>
+                            </div>
+                            <p style="font-size: 12px; color: #666; margin: 0;">Please wait, this may take a few moments...</p>
+                        </div>
+                    `
+                });
+            }, 200);
+
+            // Prepare form data
+            const formData = new FormData(form);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            // Submit via AJAX
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                
+                // Complete progress bar
+                Swal.update({
+                    html: `
+                        <div style="text-align: left;">
+                            <p style="margin-bottom: 10px;">${data.success ? 'Syncing completed!' : 'Sync failed!'}</p>
+                            <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
+                                <div style="background: ${data.success ? 'linear-gradient(90deg, #28a745 0%, #5cb85c 100%)' : 'linear-gradient(90deg, #dc3545 0%, #e74c3c 100%)'}; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+                                    ${data.success ? '100%' : 'Error'}
+                                </div>
+                            </div>
+                        </div>
+                    `
+                });
+
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? 'Success!' : 'Error!',
+                        text: data.message,
+                        confirmButtonColor: data.success ? '#3085d6' : '#d33',
+                    }).then(() => {
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    });
+                }, 500);
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred while syncing from SAP. Please try again.',
+                    confirmButtonColor: '#d33',
+                });
+            });
         }
     </script>
 @endsection
