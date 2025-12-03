@@ -44,6 +44,8 @@ class GrpoExport implements FromCollection, WithHeadings
             '021C',
             '022C',
             '023C',
+            '025C',
+            '026C',
             'APS'
         ];
 

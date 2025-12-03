@@ -406,6 +406,25 @@ Consider implementing connection pooling for high-volume scenarios:
 -   **Solution**: Verify SQL Server credentials in `.env`
 -   **Check**: Username, password, and database name
 
+**Issue: "SQLSTATE[IMSSP]: This extension requires the Microsoft ODBC Driver for SQL Server"**
+
+-   **Error Message**: `SQLSTATE[IMSSP]: This extension requires the Microsoft ODBC Driver for SQL Server to communicate with SQL Server. Access the following URL to download the ODBC Driver for SQL Server for x64: https://go.microsoft.com/fwlink/?LinkId=163712`
+-   **Cause**: The PHP sqlsrv extension is installed, but the Microsoft ODBC Driver for SQL Server is NOT installed on the server
+-   **Windows Solution**:
+    1.  Download ODBC Driver 17 or 18 for SQL Server (x64) from: https://go.microsoft.com/fwlink/?LinkId=163712
+    2.  Run the downloaded `.msi` installer
+    3.  Accept the license agreement and complete installation
+    4.  Restart Apache from XAMPP Control Panel
+    5.  Verify installation:
+        -   Press `Win + R`, type `odbcad32.exe`, press Enter
+        -   Go to **Drivers** tab
+        -   Look for "ODBC Driver 17 for SQL Server" or "ODBC Driver 18 for SQL Server"
+-   **Linux Solution**: Install Microsoft ODBC Driver for SQL Server
+-   **Verify**:
+    -   Windows: Open ODBC Data Source Administrator, check Drivers tab
+    -   Linux: `odbcinst -q -d`
+-   **Important**: Even if PHP sqlsrv extension is installed, you MUST also install the ODBC Driver separately. They are two different components.
+
 **Issue: "SQLSTATE[HY000] [20002] TCP Provider: Error code 0x2AF9"**
 
 -   **Windows Solution**:

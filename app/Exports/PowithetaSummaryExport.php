@@ -29,11 +29,11 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
     private function prepareSummaryData($date)
     {
         // Define the projects to include
-        $this->projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
-        
+        $this->projects = ['017C', '021C', '022C', '023C', '025C', '026C', 'APS'];
+
         // Define department codes to include
         $incl_deptcode = ['40', '50', '60', '140', '200'];
-        
+
         // Define item codes to exclude
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
         foreach ($excl_itemcode as $e) {
@@ -43,20 +43,20 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
         // Group data by month and project
         $this->summaryData = [];
         $this->totalsByProject = [];
-        
+
         // Initialize total by project
         foreach ($this->projects as $project) {
             $this->totalsByProject[$project] = 0;
         }
-        
+
         // Get data for the past 12 months
         for ($i = 0; $i < 12; $i++) {
             $monthDate = clone $date;
             $monthDate->subMonths($i);
-            
+
             $monthName = $monthDate->format('M Y');
             $monthProjects = [];
-            
+
             // Get data for each project in this month
             foreach ($this->projects as $project) {
                 $monthlyAmount = Powitheta::whereYear('po_delivery_date', $monthDate->year)
@@ -67,22 +67,22 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
                     ->whereIn('dept_code', $incl_deptcode)
                     ->where($excl_itemcode_arr)
                     ->sum('item_amount');
-                
+
                 $monthProjects[] = [
                     'project_code' => $project,
                     'total_amount' => $monthlyAmount
                 ];
-                
+
                 // Add to project totals
                 $this->totalsByProject[$project] += $monthlyAmount;
             }
-            
+
             $this->summaryData[] = [
                 'month' => $monthName,
                 'projects' => $monthProjects
             ];
         }
-        
+
         // Reverse to show oldest to newest
         $this->summaryData = array_reverse($this->summaryData);
     }
@@ -90,17 +90,17 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
     public function array(): array
     {
         $rows = [];
-        
+
         // For each project
         foreach ($this->projects as $project) {
             $row = [$project];
-            
+
             // Add monthly data
             foreach ($this->summaryData as $monthData) {
                 $projectData = collect($monthData['projects'])->firstWhere('project_code', $project);
                 $row[] = $projectData['total_amount'] ?? 0;
             }
-            
+
             // Add yearly total
             $row[] = $this->totalsByProject[$project] ?? 0;
             $rows[] = $row;
@@ -112,22 +112,22 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
     public function headings(): array
     {
         $headers = ['Project'];
-        
+
         // Add month names
         foreach ($this->summaryData as $monthData) {
             $headers[] = $monthData['month'];
         }
-        
+
         // Add yearly total header
         $headers[] = 'Yearly Total';
-        
+
         return $headers;
     }
 
     public function styles(Worksheet $sheet)
     {
         $lastColumn = chr(65 + count($this->summaryData) + 1); // +1 for Yearly Total column
-        
+
         return [
             // Style the header row
             1 => [
@@ -184,23 +184,23 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
                 $lastColumn = chr(65 + count($this->summaryData) + 1);
-                
+
                 // Freeze panes
                 $sheet->freezePane('B2');
-                
+
                 // Auto-filter
                 $sheet->setAutoFilter('A1:' . $lastColumn . count($this->projects));
-                
+
                 // Set column width for Project column
                 $sheet->getColumnDimension('A')->setWidth(15);
-                
+
                 // Add a total row at the bottom
                 $totalRow = count($this->projects) + 2;
                 $sheet->setCellValue('A' . $totalRow, 'TOTAL');
-                
+
                 // Style the total row
                 $sheet->getStyle('A' . $totalRow . ':' . $lastColumn . $totalRow)->applyFromArray([
                     'font' => ['bold' => true],
@@ -212,13 +212,13 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
                         'outline' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_MEDIUM],
                     ]
                 ]);
-                
+
                 // Add sum formulas for each month and yearly total
                 for ($col = 66; $col <= 64 + count($this->summaryData) + 1; $col++) {
                     $colLetter = chr($col);
                     $sheet->setCellValue($colLetter . $totalRow, '=SUM(' . $colLetter . '2:' . $colLetter . ($totalRow - 1) . ')');
                 }
-                
+
                 // Zebra striping for rows
                 for ($row = 2; $row <= (count($this->projects) + 1); $row++) {
                     if ($row % 2 == 0) {
@@ -233,4 +233,4 @@ class PowithetaSummaryExport implements FromArray, WithHeadings, ShouldAutoSize,
             },
         ];
     }
-} 
+}

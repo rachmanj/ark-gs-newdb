@@ -77,6 +77,13 @@ This document describes the CURRENT WORKING STATE of the application architectur
 ### 1. Data Import/Export System
 
 -   **POWITHETA Controller**: Handles purchase order data from SAP systems
+-   **PO Controller**: Manages purchase order views and detailed drill-down pages
+    -   **PO Sent Details Page** (`/dashboard/po-sent-details`):
+        -   Grouped display by PO Number with aggregated totals
+        -   Expandable rows showing individual line items
+        -   DataTables with server-side processing
+        -   Supports filtering by project, year, month, budget type
+        -   199 line items condensed to 59 PO Numbers for better overview
 -   **GRPO Controller**: Manages goods receipt processing
 -   **MIGI Controller**: Processes material issue data
 -   **INCOMING Controller**: Handles incoming material tracking
@@ -189,6 +196,14 @@ All routes follow RESTful conventions with resource controllers:
 3. **Conversion**: POWITHETA data → Purchase Orders → Supplier relationships
 4. **Dashboard**: Real-time aggregation → Chart.js/ApexCharts visualizations
 5. **Yearly Dashboard**: Data aggregation → JSON encoding → ApexCharts rendering → Interactive charts
+6. **PO Details Drill-Down**:
+   - Dashboard link click → Filter parameters (project, year, month, budget_type)
+   - Server-side data grouping using Laravel collections (groupBy, map)
+   - Aggregation of item counts and total amounts per PO
+   - JSON encoding of nested line items array
+   - DataTables rendering with child row capability
+   - Client-side HTML entity decoding before JSON parsing
+   - Expandable rows showing formatted line item tables with subtotals
 
 ### Yearly Dashboard Implementation Details
 
@@ -243,6 +258,18 @@ graph TD
     P[Production Entry] --> Q[Shift Calculation]
     Q --> R[MTD Aggregation]
     R --> S[Performance Metrics]
+
+    T[Dashboard PO Link] --> U[Filter Parameters]
+    U --> V[Server-Side Grouping]
+    V --> W[Collection GroupBy PO]
+    W --> X[Aggregate Totals]
+    X --> Y[JSON Encode Line Items]
+    Y --> Z[DataTables Rendering]
+    Z --> AA[User Click Expand]
+    AA --> AB[Decode HTML Entities]
+    AB --> AC[Parse JSON]
+    AC --> AD[Render Child Row]
+    AD --> AE[Display Line Items Table]
 ```
 
 ## Security Implementation

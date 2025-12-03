@@ -34,7 +34,23 @@
                                 </div>
                             </td>
                             <td class="text-right py-2">
-                                <span class="text-muted">{{ number_format($item['sent_amount'] / 1000, 2) }}</span>
+                                @if($item['sent_amount'] > 0)
+                                    <a href="{{ route('dashboard.po.sent.details.page', [
+                                        'project' => $item['project'],
+                                        'year' => date('Y'),
+                                        'month' => date('m'),
+                                        'budget_type' => 'CPX'
+                                    ]) }}" 
+                                    class="text-primary font-weight-medium" 
+                                    style="text-decoration: none;"
+                                    data-toggle="tooltip" 
+                                    title="Click to view details">
+                                        {{ number_format($item['sent_amount'] / 1000, 2) }}
+                                        <i class="fas fa-external-link-alt ml-1" style="font-size: 0.75rem;"></i>
+                                    </a>
+                                @else
+                                    <span class="text-muted">{{ number_format($item['sent_amount'] / 1000, 2) }}</span>
+                                @endif
                             </td>
                             <td class="text-right py-2">
                                 <span class="font-weight-medium">{{ number_format($item['budget'] / 1000, 2) }}</span>
@@ -59,7 +75,25 @@
                     @endforeach
                     <tr class="font-weight-bold bg-light">
                         <td class="py-2">Total</td>
-                        <td class="text-right py-2">{{ number_format($capex_daily['sent_total'] / 1000, 2) }}</td>
+                        <td class="text-right py-2">
+                            @if($capex_daily['sent_total'] > 0)
+                                <a href="{{ route('dashboard.po.sent.details.page', [
+                                    'project' => 'ALL',
+                                    'year' => date('Y'),
+                                    'month' => date('m'),
+                                    'budget_type' => 'CPX'
+                                ]) }}" 
+                                class="text-primary" 
+                                style="text-decoration: none;"
+                                data-toggle="tooltip" 
+                                title="Click to view all PO details">
+                                    {{ number_format($capex_daily['sent_total'] / 1000, 2) }}
+                                    <i class="fas fa-external-link-alt ml-1" style="font-size: 0.75rem;"></i>
+                                </a>
+                            @else
+                                {{ number_format($capex_daily['sent_total'] / 1000, 2) }}
+                            @endif
+                        </td>
                         <td class="text-right py-2">{{ number_format($capex_daily['budget_total'] / 1000, 2) }}</td>
                         <td class="text-right py-2">
                             <span

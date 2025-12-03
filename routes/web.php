@@ -84,6 +84,10 @@ Route::middleware('auth')->group(function () {
         // Item price history routes
         Route::get('/item-price-history', [POController::class, 'item_price_history'])->name('item.price.history');
         Route::post('/item-price-history', [POController::class, 'item_price_history_results'])->name('item.price.history.results');
+        
+        // PO Sent details routes
+        Route::get('/po-sent-details', [POController::class, 'po_sent_details_page'])->name('po.sent.details.page');
+        Route::get('/po-sent-details-data', [POController::class, 'po_sent_details'])->name('po.sent.details');
     });
 
 
