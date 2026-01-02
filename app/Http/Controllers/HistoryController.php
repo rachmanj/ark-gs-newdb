@@ -11,7 +11,7 @@ class HistoryController extends Controller
 {
     public function index()
     {
-        $projects = ['017C', '021C', '022C', '023C', '025C', 'APS'];
+        $projects = ['017C', '021C', '022C', '023C', '025C', '026C', 'APS'];
 
         return view('history.index', compact('projects'));
     }
