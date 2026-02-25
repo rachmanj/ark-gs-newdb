@@ -20,6 +20,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\POController;
 use App\Http\Controllers\DailyProductionController;
+use App\Http\Controllers\PoExclusionController;
 use App\Http\Controllers\ProductionPlanController;
 use Illuminate\Support\Facades\Route;
 
@@ -165,6 +166,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/{dailyProduction}', [DailyProductionController::class, 'update'])->name('update');
         Route::delete('/{dailyProduction}', [DailyProductionController::class, 'destroy'])->name('destroy');
     });
+
+    Route::resource('po-exclusions', PoExclusionController::class)->only(['index', 'create', 'store', 'destroy']);
 
     Route::get('budget/data', [BudgetController::class, 'data'])->name('budget.data');
     Route::resource('budget', BudgetController::class);

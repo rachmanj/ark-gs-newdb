@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\History;
+use App\Services\PoExclusionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +51,8 @@ class DashboardOtherController extends Controller
             ->selectRaw('project_code, item_amount, substring(po_delivery_date, 6, 2) as month, po_status, po_delivery_status')
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', 'Delivered');
-            
+        app(PoExclusionService::class)->applyExclusion($dynamic_posent);
+
         return $dynamic_posent;
     }
 

@@ -150,20 +150,21 @@
                         <p>Sync PO With ETA data from SAP SQL Server. Default date range: 2024-12-01 to today.</p>
                         <div class="form-group">
                             <label>Start Date (Optional)</label>
-                            <input type="date" name="start_date" class="form-control" 
-                                value="{{ \Carbon\Carbon::parse('2024-12-01')->format('Y-m-d') }}">
+                            <input type="date" name="start_date" class="form-control"
+                                value="{{ \Carbon\Carbon::parse('2026-01-01')->format('Y-m-d') }}">
                             <small class="form-text text-muted">Leave empty to use 2024-12-01</small>
                         </div>
                         <div class="form-group">
                             <label>End Date (Optional)</label>
-                            <input type="date" name="end_date" class="form-control" 
+                            <input type="date" name="end_date" class="form-control"
                                 value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
                             <small class="form-text text-muted">Leave empty to use today</small>
                         </div>
                     </div>
                     <div class="modal-footer justify-content-between">
                         <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-sm btn-primary" onclick="submitSync(event)">Sync from SAP</button>
+                        <button type="submit" class="btn btn-sm btn-primary" onclick="submitSync(event)">Sync from
+                            SAP</button>
                     </div>
                 </form>
             </div><!-- /.modal-content -->
@@ -174,7 +175,8 @@
 @section('styles')
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+    <link rel="stylesheet"
+        href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('adminlte/plugins/datatables/css/datatables.min.css') }}" />
     <!-- SweetAlert2 -->
@@ -437,7 +439,7 @@
             $('#modal-sync').modal('hide');
 
             let progress = 0;
-            
+
             Swal.fire({
                 title: 'Syncing from SAP...',
                 html: `
@@ -462,7 +464,7 @@
             const progressInterval = setInterval(() => {
                 progress += Math.random() * 15;
                 if (progress > 90) progress = 90;
-                
+
                 Swal.update({
                     html: `
                         <div style="text-align: left;">
@@ -483,19 +485,19 @@
             formData.append('_token', '{{ csrf_token() }}');
 
             fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                clearInterval(progressInterval);
-                
-                Swal.update({
-                    html: `
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    clearInterval(progressInterval);
+
+                    Swal.update({
+                        html: `
                         <div style="text-align: left;">
                             <p style="margin-bottom: 10px;">${data.success ? 'Syncing completed!' : 'Sync failed!'}</p>
                             <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
@@ -505,36 +507,36 @@
                             </div>
                         </div>
                     `
-                });
-
-                setTimeout(() => {
-                    let message = data.message;
-                    if (data.convert_success !== undefined && data.convert_message) {
-                        message += ' ' + data.convert_message;
-                    }
-                    
-                    Swal.fire({
-                        icon: data.success ? 'success' : 'error',
-                        title: data.success ? 'Success!' : 'Error!',
-                        text: message,
-                        confirmButtonColor: data.success ? '#3085d6' : '#d33',
-                    }).then(() => {
-                        if (data.success) {
-                            window.location.reload();
-                        }
                     });
-                }, 500);
-            })
-            .catch(error => {
-                clearInterval(progressInterval);
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'An error occurred while syncing from SAP. Please try again.',
-                    confirmButtonColor: '#d33',
+
+                    setTimeout(() => {
+                        let message = data.message;
+                        if (data.convert_success !== undefined && data.convert_message) {
+                            message += ' ' + data.convert_message;
+                        }
+
+                        Swal.fire({
+                            icon: data.success ? 'success' : 'error',
+                            title: data.success ? 'Success!' : 'Error!',
+                            text: message,
+                            confirmButtonColor: data.success ? '#3085d6' : '#d33',
+                        }).then(() => {
+                            if (data.success) {
+                                window.location.reload();
+                            }
+                        });
+                    }, 500);
+                })
+                .catch(error => {
+                    clearInterval(progressInterval);
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'An error occurred while syncing from SAP. Please try again.',
+                        confirmButtonColor: '#d33',
+                    });
                 });
-            });
         }
     </script>
 @endsection

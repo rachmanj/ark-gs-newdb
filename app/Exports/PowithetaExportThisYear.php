@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Services\PoExclusionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -111,6 +112,7 @@ class PowithetaExportThisYear implements FromCollection, WithHeadings, ShouldAut
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', '=', 'Delivered')
             ->orderBy('po_delivery_date', 'desc');
+        app(PoExclusionService::class)->applyExclusion($list);
 
         return $list->get();
     }

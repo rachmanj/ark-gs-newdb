@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PoExclusionService;
 use Illuminate\Http\Request;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
@@ -180,7 +181,8 @@ class POController extends Controller
         } else {
             $query->where('budget_type', $budgetType);
         }
-        
+        app(PoExclusionService::class)->applyExclusion($query);
+
         $allItems = $query->select([
                 'po_no',
                 'create_date',

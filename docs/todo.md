@@ -59,6 +59,7 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Add PO Exclusions feature for excluding POs from filters [PoExclusion model, PoExclusionService, PoExclusionController; applied to CapexController, YearlyIndexController, DashboardOtherController, POController, PowithetaExport; Admin menu link; bulk add with comma/newline] (completed: 2026-02-25)`
 -   `[done] P1: Implement grouped PO Sent Details view with expandable line items [POController::po_sent_details() with collection groupBy; resources/views/dashboard/daily/po_sent_details.blade.php; DataTables child rows; condensed 198 items to 59 PO Numbers] (completed: 2025-12-03)`
 -   `[done] P1: Migrate dashboard libraries from CDN to local assets [Chart.js and ApexCharts in public/adminlte/plugins; updated 5 blade files] (completed: 2025-10-31)`
 -   `[done] P1: Enhance yearly dashboard index with preview cards [DashboardYearlyController: getMultiYearChartData(), getCurrentYearStats(), getCurrentYearPreviewData(); resources/views/dashboard/yearly/index.blade.php; resources/views/dashboard/yearly/preview/*.blade.php] (completed: 2025-10-31)`

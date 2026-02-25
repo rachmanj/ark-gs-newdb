@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Budget;
+use App\Services\PoExclusionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,14 +27,15 @@ class CapexController extends Controller
                 ->where('budget_type_id', 8)
                 ->sum('amount');
 
-            $po_sent_amount = DB::table('powithetas')
+            $query = DB::table('powithetas')
                 ->whereYear('po_delivery_date', $date)
                 ->whereMonth('po_delivery_date', $date)
                 ->where('po_status', '!=', 'Cancelled')
                 ->where('po_delivery_status', 'Delivered')
                 ->where('project_code', $project)
-                ->where('budget_type', 'CPX')
-                ->sum('item_amount');
+                ->where('budget_type', 'CPX');
+            app(PoExclusionService::class)->applyExclusion($query);
+            $po_sent_amount = $query->sum('item_amount');
             // $po_sent_amount = $this->po_sent_amount()->where('project_code', $project)
             //                 ->where('budget_type', 'CPX')
             //                 ->sum('item_amount');
@@ -149,6 +151,7 @@ class CapexController extends Controller
             ->whereMonth('po_delivery_date', $date)
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', 'Delivered');
+        app(PoExclusionService::class)->applyExclusion($list);
 
         return $list;
     }

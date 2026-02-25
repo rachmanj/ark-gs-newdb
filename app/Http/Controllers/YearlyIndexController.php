@@ -6,6 +6,7 @@ use App\Models\Budget;
 use App\Models\Grpo;
 use App\Models\Incoming;
 use App\Models\Migi;
+use App\Services\PoExclusionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -97,13 +98,14 @@ class YearlyIndexController extends Controller
                 ->where('budget_type_id', 8) // capex
                 ->sum('amount');
 
-            $po_sent_amount = DB::table('powithetas')
+            $query = DB::table('powithetas')
                 ->whereYear('po_delivery_date', $this->periode())
                 ->where('po_status', '!=', 'Cancelled')
                 ->where('po_delivery_status', 'Delivered')
                 ->where('project_code', $project)
-                ->where('budget_type', 'CPX')
-                ->sum('item_amount');
+                ->where('budget_type', 'CPX');
+            app(PoExclusionService::class)->applyExclusion($query);
+            $po_sent_amount = $query->sum('item_amount');
 
             // percentage of capex budget vs sent amount, if budget or sent amount is null
             if ($budget == 0 || $po_sent_amount == 0) {
@@ -150,12 +152,14 @@ class YearlyIndexController extends Controller
     {
         $excl_itemcode_arr = $this->getExcludedItemCodesArray($this->excluded_item_codes);
 
-        return DB::table('powithetas')
+        $query = DB::table('powithetas')
             ->whereIn('dept_code', $this->included_dept_codes)
             ->where($excl_itemcode_arr)
             ->whereYear('po_delivery_date', $this->periode())
             ->where('po_status', '!=', 'Cancelled')
             ->where('po_delivery_status', 'Delivered');
+        app(PoExclusionService::class)->applyExclusion($query);
+        return $query;
     }
 
 

@@ -161,6 +161,7 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **users**: User accounts with project assignments
 -   **roles/permissions**: Spatie permission system tables
 -   **progress_trackers**: System operation tracking
+-   **po_exclusions**: PO numbers excluded from dashboard/report filters (po_no, reason)
 
 ### Key Relationships
 
@@ -187,6 +188,7 @@ All routes follow RESTful conventions with resource controllers:
 /users/* → User management with role assignments
 /roles/* → Role management
 /permissions/* → Permission management
+/po-exclusions/* → PO exclusion list (admin only; excludes POs from filters)
 ```
 
 ### Data Processing Flow
