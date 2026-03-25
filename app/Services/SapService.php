@@ -229,19 +229,40 @@ class SapService
         }
     }
 
-    public function executePowithetaSqlQuery($startDate = null, $endDate = null)
+    /**
+     * POWITHETA SAP queries are limited to the current calendar year.
+     * Requested dates are clamped to [Jan 1 … Dec 31] of this year and end is capped at today.
+     *
+     * @return array{0: string, 1: string} [Y-m-d start, Y-m-d end]
+     */
+    public function resolvePowithetaSapDateRange($startDate = null, $endDate = null): array
     {
-        if (!$startDate) {
-            $startDate = Carbon::parse('2024-12-01')->format('Y-m-d');
-        } else {
-            $startDate = Carbon::parse($startDate)->format('Y-m-d');
+        $now = Carbon::now();
+        $year = (int) $now->year;
+        $yearStart = Carbon::create($year, 1, 1)->startOfDay();
+        $yearEnd = Carbon::create($year, 12, 31)->startOfDay();
+        $today = $now->copy()->startOfDay();
+
+        $start = $startDate
+            ? Carbon::parse($startDate)->startOfDay()
+            : $yearStart->copy();
+        $end = $endDate
+            ? Carbon::parse($endDate)->startOfDay()
+            : $today->copy();
+
+        $start = $start->max($yearStart)->min($yearEnd);
+        $end = $end->min($today)->min($yearEnd)->max($yearStart);
+
+        if ($start->gt($end)) {
+            $end = $start->copy();
         }
 
-        if (!$endDate) {
-            $endDate = Carbon::now()->format('Y-m-d');
-        } else {
-            $endDate = Carbon::parse($endDate)->format('Y-m-d');
-        }
+        return [$start->format('Y-m-d'), $end->format('Y-m-d')];
+    }
+
+    public function executePowithetaSqlQuery($startDate = null, $endDate = null)
+    {
+        [$startDate, $endDate] = $this->resolvePowithetaSapDateRange($startDate, $endDate);
 
         $sql = "
             SELECT DISTINCT

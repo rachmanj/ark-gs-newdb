@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: [Auto-updated by AI]
+**Last Updated**: 2026-03-25
 
 ## Memory Maintenance Guidelines
 
@@ -26,6 +26,16 @@
 ---
 
 ## Project Memory Entries
+
+### [020] App timezone WITA + POWITHETA sync 06:00 / 18:00 (2026-03-25) ✅ COMPLETE
+
+**Challenge**: Scheduled POWITHETA runs must align with 06:00 and 18:00 WITA, not UTC.
+
+**Solution**: `config/app.php` uses `env('APP_TIMEZONE', 'Asia/Makassar')` (WITA). `.env` sets `APP_TIMEZONE=Asia/Makassar`. `storage/app/powitheta_schedule.json` uses `06:00` and `18:00`. `php artisan schedule:list` shows next due with `+08:00`.
+
+**Key Learning**: `dailyAt()` is interpreted in `config('app.timezone')`; without setting WITA, times were effectively UTC. OS should still run `schedule:run` every minute (or two cron lines at 06:00 and 18:00 local if only this job). Documented in `docs/architecture.md`, `docs/decisions.md`, `docs/planned-powitheta-scheduled-sync.md`.
+
+---
 
 ### [001] ARK-GS Comprehensive System Analysis (2025-01-16) ✅ COMPLETE
 
@@ -154,6 +164,56 @@
 **Solution**: Migrated all dashboard visualizations to use local assets from public/adminlte/plugins. Updated Chart.js references in 3 files (resources/views/dashboard/monthly/index.blade.php, resources/views/dashboard/monthly/new_display.blade.php, resources/views/dashboard/yearly/index.blade.php) to use {{ asset('adminlte/plugins/chart.js/Chart.min.js') }} instead of CDN. Downloaded ApexCharts v3.45.1 (apexcharts.min.js and apexcharts.css) to public/adminlte/plugins/apexcharts/ directory. Updated ApexCharts references in 2 files (resources/views/dashboard/monthly/new_display.blade.php, resources/views/dashboard/yearly/new_display.blade.php) to use local assets.
 
 **Key Learning**: AdminLTE already includes Chart.js in plugins/chart.js/ folder with multiple versions (Chart.js, Chart.min.js, Chart.bundle.js, Chart.bundle.min.js). When migrating from CDN to local assets, verify compatibility by checking library versions. Use Laravel's asset() helper for proper URL generation that respects public_path configuration. For libraries not included in AdminLTE (like ApexCharts), download specific versions to maintain consistency. PowerShell's Invoke-WebRequest is effective for downloading library files. Organize third-party libraries in public/adminlte/plugins/[library-name]/ for consistency with AdminLTE structure. After migration, test all charts to ensure functionality remains intact.
+
+---
+
+### [015] Scheduled POWITHETA truncate + SAP sync — deferred (2025-03-23) ⚠️ DEFERRED
+
+**Challenge**: Automate twice-daily truncate-then-sync for PO With ETA to match manual UI behavior.
+
+**Solution**: Not implemented yet. Full step-by-step plan (Artisan command, `Kernel` schedule, cron/Task Scheduler, `withoutOverlapping`) is saved in [docs/planned-powitheta-scheduled-sync.md](docs/planned-powitheta-scheduled-sync.md) and listed under Deferred in [docs/backlog.md](docs/backlog.md).
+
+**Key Learning**: Defer until SAP SQL Server is reachable for development and production validation; `VerifySapSyncCommand` truncates only `Powitheta` — production automation must use the controller’s full three-table truncate (`PurchaseOrderItem`, `PurchaseOrder`, `Powitheta`).
+
+---
+
+### [019] POWITHETA scheduled sync UX: ticker, admin date range, history table (2026-03-25) ✅ COMPLETE
+
+**Challenge**: Surface in-progress automatic sync to all users; let superadmin choose scheduled SAP date mode/range; persist sync run outcomes.
+
+**Solution**: `powitheta_sync_histories` table + `PowithetaSyncHistory` model; `sync_from_sap` writes manual rows, artisan passes `sync_history_id` for scheduled/cli. `PowithetaRefreshFromSapCommand` uses `--scheduled`, sets `Cache::powitheta_scheduled_sync_in_progress`, merges `PowithetaScheduleSettings::getScheduledSapDatePayload()` (current year vs custom). Public `GET /api/powitheta-sync-status` + fixed ticker partial above coal ticker (also on login). Admin page: date mode + history table.
+
+**Key Learning**: Manual PO With ETA modal remains the only driver for interactive sync dates; scheduled runs ignore modal and use JSON settings.
+
+---
+
+### [018] POWITHETA SAP sync current year + upsert source clarification (2026-03-25) ✅ COMPLETE
+
+**Challenge**: Confine SAP pulls to the current calendar year; document that normalized POs are driven only by `powithetas`.
+
+**Solution**: `SapService::resolvePowithetaSapDateRange()` clamps requested dates to [Jan 1 … Dec 31] of this year and caps end at today; `executePowithetaSqlQuery()` uses it. `sync_from_sap` success message and JSON include `sap_date_range`. UI modal and admin schedule help text updated. `VerifySapSyncCommand` powitheta defaults use `startOfYear`. Docs: [docs/planned-powitheta-po-upsert.md](docs/planned-powitheta-po-upsert.md).
+
+**Key Learning**: Upsert path (`performConvertToPo`) already reads only `powithetas`; SAP feeds staging first, then conversion runs.
+
+---
+
+### [017] POWITHETA scheduled sync UI + staging-only truncate (2025-03-23) ✅ COMPLETE
+
+**Challenge**: Configure automated SAP sync times from the app; align manual truncate with staging-only behavior.
+
+**Solution**: Superadmin **Admin → POWITHETA sync schedule** (`PowithetaScheduleController`, `resources/views/admin/powitheta-schedule.blade.php`) saves `enabled` + two daily times to `storage/app/powitheta_schedule.json` via `PowithetaScheduleSettings`. `app/Console/Kernel.php` schedules `powitheta:refresh-from-sap` at those times. Command `PowithetaRefreshFromSapCommand` truncates `powithetas` only then calls `sync_from_sap`. `PowithetaController::truncate()` now clears **powithetas** only; PO index button label/confirm text updated.
+
+**Key Learning**: OS must still run `php artisan schedule:run` every minute. Upsert refactor ([016]) is implemented — scheduled command uses same conversion as manual UI.
+
+---
+
+### [016] POWITHETA PO upsert (header patch + one-time lines) (2026-03-25) ✅ COMPLETE
+
+**Challenge**: Avoid duplicate normalized POs on re-sync; for existing `doc_num` only refresh delivery/status fields from staging, not lines.
+
+**Solution**: `performConvertToPo()` resolves each `po_no` from `powithetas`; if `PurchaseOrder` exists for `doc_num`, updates only `po_delivery_date`, `po_status`, `po_delivery_status` (first staging row per `po_no` by `id`); otherwise creates header + lines. Migration deduplicates legacy duplicate `doc_num` rows (keeps lowest `id`, deletes duplicate headers and their items) then adds unique index `purchase_orders_doc_num_unique`. See [docs/planned-powitheta-po-upsert.md](docs/planned-powitheta-po-upsert.md).
+
+**Key Learning**: MySQL `SELECT DISTINCT po_no` with many columns is ambiguous; use distinct `po_no` pluck then `orderBy('id')->first()` per group for stable header fields.
 
 ---
 

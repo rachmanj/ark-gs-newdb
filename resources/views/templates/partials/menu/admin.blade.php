@@ -6,5 +6,6 @@
     <li><a href="{{ route('roles.index') }}" class="dropdown-item">Roles</a></li>
     <li><a href="{{ route('permissions.index') }}" class="dropdown-item">Permission</a></li>
     <li><a href="{{ route('po-exclusions.index') }}" class="dropdown-item">PO Exclusions</a></li>
+    <li><a href="{{ route('admin.powitheta-schedule.edit') }}" class="dropdown-item">POWITHETA sync schedule</a></li>
   </ul>
 </li>

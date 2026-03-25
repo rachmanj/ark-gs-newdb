@@ -9,6 +9,10 @@
 @endsection
 
 @section('content')
+    @php
+        $powithetaSapYearStart = \Carbon\Carbon::now()->startOfYear()->format('Y-m-d');
+        $powithetaSapToday = \Carbon\Carbon::now()->format('Y-m-d');
+    @endphp
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -25,6 +29,12 @@
                             {{ Session::get('error') }}
                         </div>
                     @endif
+                    @if (Session::has('warning'))
+                        <div class="alert alert-warning alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ Session::get('warning') }}
+                        </div>
+                    @endif
                     <a href="#"><b>THIS MONTH </b></a> |
                     <a href="{{ route('powitheta.index_this_year') }}">This Year</a> |
                     <a href="{{ route('dashboard.search.po') }}">Search PO</a>
@@ -32,7 +42,7 @@
                     @can('upload_data')
                         <button type="button" class="btn btn-sm btn-danger float-right {{ $is_data === 1 ? '' : 'disabled' }}"
                             onclick="confirmTruncate()" {{ $is_data === 1 ? '' : 'disabled' }}>
-                            <i class="fas fa-trash"></i> Truncate Table
+                            <i class="fas fa-trash"></i> Truncate staging
                         </button>
                         <button class="btn btn-sm btn-success float-right mx-2" data-toggle="modal"
                             data-target="#modal-upload_newdb" {{ $is_data === 1 ? 'disabled' : '' }}>
@@ -144,21 +154,21 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="{{ route('powitheta.sync_from_sap') }}" method="POST" id="syncForm">
+                <form action="{{ route('powitheta.sync_from_sap') }}" method="POST" id="syncForm"
+                    data-default-year-start="{{ $powithetaSapYearStart }}" data-default-today="{{ $powithetaSapToday }}">
                     @csrf
                     <div class="modal-body">
-                        <p>Sync PO With ETA data from SAP SQL Server. Default date range: 2024-12-01 to today.</p>
+                        <p>Sync PO With ETA from SAP SQL Server for the <strong>current calendar year</strong> only.
+                            Dates below are clamped to Jan 1 … today (within this year).</p>
                         <div class="form-group">
-                            <label>Start Date (Optional)</label>
-                            <input type="date" name="start_date" class="form-control"
-                                value="{{ \Carbon\Carbon::parse('2026-01-01')->format('Y-m-d') }}">
-                            <small class="form-text text-muted">Leave empty to use 2024-12-01</small>
+                            <label>Start Date (optional)</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ $powithetaSapYearStart }}">
+                            <small class="form-text text-muted">Default: first day of this year</small>
                         </div>
                         <div class="form-group">
-                            <label>End Date (Optional)</label>
-                            <input type="date" name="end_date" class="form-control"
-                                value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
-                            <small class="form-text text-muted">Leave empty to use today</small>
+                            <label>End Date (optional)</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ $powithetaSapToday }}">
+                            <small class="form-text text-muted">Default: today (cannot exceed current year)</small>
                         </div>
                     </div>
                     <div class="modal-footer justify-content-between">
@@ -415,7 +425,7 @@
         function confirmTruncate() {
             Swal.fire({
                 title: 'Are you sure?',
-                text: 'This will delete all PO With ETA records. This action cannot be undone!',
+                text: 'This will delete all rows in the POWITHETA staging table (powithetas) only. Normalized purchase orders are not removed. This cannot be undone!',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -435,6 +445,8 @@
             const form = document.getElementById('syncForm');
             const startDate = form.querySelector('input[name="start_date"]').value;
             const endDate = form.querySelector('input[name="end_date"]').value;
+            const yearStartDefault = form.dataset.defaultYearStart || '';
+            const todayDefault = form.dataset.defaultToday || '';
 
             $('#modal-sync').modal('hide');
 
@@ -444,8 +456,8 @@
                 title: 'Syncing from SAP...',
                 html: `
                     <div style="text-align: left;">
-                        <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server...</p>
-                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date Range:</strong> ${startDate || '2024-12-01'} to ${endDate || 'Today'}</p>
+                        <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server (current year)...</p>
+                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date range (requested):</strong> ${startDate || yearStartDefault} to ${endDate || todayDefault}</p>
                         <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
                             <div id="progress-bar" style="background: linear-gradient(90deg, #3085d6 0%, #5dade2 100%); height: 100%; width: ${progress}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
                                 ${Math.round(progress)}%
@@ -468,8 +480,8 @@
                 Swal.update({
                     html: `
                         <div style="text-align: left;">
-                            <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server...</p>
-                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date Range:</strong> ${startDate || '2024-12-01'} to ${endDate || 'Today'}</p>
+                            <p style="margin-bottom: 10px;">Syncing data from SAP SQL Server (current year)...</p>
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Date range (requested):</strong> ${startDate || yearStartDefault} to ${endDate || todayDefault}</p>
                             <div style="background: #f0f0f0; border-radius: 10px; height: 25px; margin-bottom: 10px; overflow: hidden;">
                                 <div id="progress-bar" style="background: linear-gradient(90deg, #3085d6 0%, #5dade2 100%); height: 100%; width: ${progress}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
                                     ${Math.round(progress)}%

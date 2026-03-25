@@ -40,6 +40,8 @@
     </div>
     <!-- ./wrapper -->
 
+    @include('templates.partials.powitheta-sync-ticker')
+
     <!-- Coal Price Ticker -->
     @include('templates.partials.coal-ticker')
 

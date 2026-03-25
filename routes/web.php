@@ -22,9 +22,18 @@ use App\Http\Controllers\POController;
 use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\PoExclusionController;
 use App\Http\Controllers\ProductionPlanController;
+use App\Http\Controllers\PowithetaScheduleController;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/api/powitheta-sync-status', function () {
+    $payload = Cache::get('powitheta_scheduled_sync_in_progress');
 
+    return response()->json([
+        'in_progress' => Cache::has('powitheta_scheduled_sync_in_progress'),
+        'started_at' => is_array($payload) ? ($payload['started_at'] ?? null) : null,
+    ]);
+})->name('api.powitheta-sync-status');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -168,6 +177,11 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::resource('po-exclusions', PoExclusionController::class)->only(['index', 'create', 'store', 'destroy']);
+
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/powitheta-schedule', [PowithetaScheduleController::class, 'edit'])->name('powitheta-schedule.edit');
+        Route::put('/powitheta-schedule', [PowithetaScheduleController::class, 'update'])->name('powitheta-schedule.update');
+    });
 
     Route::get('budget/data', [BudgetController::class, 'data'])->name('budget.data');
     Route::resource('budget', BudgetController::class);

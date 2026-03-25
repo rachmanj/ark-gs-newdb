@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Services\PowithetaScheduleSettings;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -15,7 +16,16 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $config = PowithetaScheduleSettings::get();
+        if (! ($config['enabled'] ?? true)) {
+            return;
+        }
+
+        foreach (PowithetaScheduleSettings::normalizedSyncTimes() as $time) {
+            $schedule->command('powitheta:refresh-from-sap --scheduled')
+                ->dailyAt($time)
+                ->withoutOverlapping(20);
+        }
     }
 
     /**

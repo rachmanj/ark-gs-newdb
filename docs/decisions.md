@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: [Auto-updated by AI]
+**Last Updated**: 2026-03-25
 
 # Technical Decision Records
 
@@ -29,6 +29,39 @@ Decision: [Title] - [YYYY-MM-DD]
 ---
 
 ## Recent Decisions
+
+### Decision: POWITHETA scheduled SAP sync — WITA timezone + OS scheduler requirement - 2026-03-25
+
+**Context**: Automated twice-daily POWITHETA refresh must run at **06:00** and **18:00** in Indonesia Central Time (WITA), not UTC. Laravel’s `dailyAt()` times are interpreted in `config('app.timezone')`. Production also requires a process outside PHP to invoke the Laravel scheduler.
+
+**Options Considered**:
+
+1. **Keep `timezone` hardcoded to UTC** in `config/app.php` and document that UI times are “UTC”:
+    - ✅ Pros: No env change
+    - ❌ Cons: Misleading for operators; 06:00/18:00 would run at wrong wall-clock time in Indonesia
+
+2. **`APP_TIMEZONE=Asia/Makassar` (WITA) + `env('APP_TIMEZONE', …)` in config**:
+    - ✅ Pros: `schedule:list` and `dailyAt` align with business hours; matches superadmin schedule UI intent
+    - ❌ Cons: All app `Carbon` defaults use WITA unless overridden — acceptable for this deployment
+
+3. **Rely on Laravel running without cron**:
+    - ✅ Pros: None for scheduling
+    - ❌ Cons: Nothing triggers `schedule:run`; scheduled commands never execute
+
+**Decision**: Use `env('APP_TIMEZONE', 'Asia/Makassar')` in `config/app.php` and set `APP_TIMEZONE` in production `.env`. Document that **cron** (Linux) or **Windows Task Scheduler** must run `php artisan schedule:run` **every minute** from the project directory (one-time operational setup after deploy).
+
+**Rationale**: WITA fixes wall-clock meaning of configured sync times. The OS scheduler is mandatory because Laravel does not ship a long-running scheduler daemon; `schedule:run` is idempotent and cheap when no job is due.
+
+**Implementation**:
+
+-   `config/app.php`: `'timezone' => env('APP_TIMEZONE', 'Asia/Makassar')`
+-   `.env`: `APP_TIMEZONE=Asia/Makassar` (production parity)
+-   `storage/app/powitheta_schedule.json`: `sync_times` **06:00**, **18:00** (editable via Admin UI)
+-   Ops: crontab line `* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1` or Windows equivalent
+
+**Review Date**: 2027-03-25 (revisit if multi-region or split timezone per module)
+
+---
 
 ### Decision: Laravel 8.75+ with AdminLTE Integration - 2022-02-14
 

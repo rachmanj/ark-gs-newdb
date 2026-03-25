@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: [Auto-updated by AI]
+Last Updated: 2026-03-25
 
 ## Architecture Documentation Guidelines
 
@@ -137,6 +137,7 @@ This document describes the CURRENT WORKING STATE of the application architectur
 #### Purchase & Procurement
 
 -   **powithetas**: Purchase order data from SAP (PO_NO, vendor info, items, amounts)
+-   **powitheta_sync_histories**: Audit log for manual and scheduled SAP refresh runs (trigger, status, SAP date range, imported count, errors)
 -   **grpos**: Goods receipt processing orders (GRPO_NO, delivery tracking)
 -   **migis**: Material issue transactions
 -   **incomings**: Incoming material tracking
@@ -189,6 +190,8 @@ All routes follow RESTful conventions with resource controllers:
 /roles/* → Role management
 /permissions/* → Permission management
 /po-exclusions/* → PO exclusion list (admin only; excludes POs from filters)
+/admin/powitheta-schedule → Superadmin: enable sync, two daily times, scheduled SAP date mode, sync history table
+/api/powitheta-sync-status → JSON: scheduled sync in progress (public; used by ticker)
 ```
 
 ### Data Processing Flow
@@ -196,9 +199,10 @@ All routes follow RESTful conventions with resource controllers:
 1. **Import**: Excel files → Validation → Database storage
 2. **Export**: Database queries → Excel/PDF generation → Download
 3. **Conversion**: POWITHETA data → Purchase Orders → Supplier relationships
-4. **Dashboard**: Real-time aggregation → Chart.js/ApexCharts visualizations
-5. **Yearly Dashboard**: Data aggregation → JSON encoding → ApexCharts rendering → Interactive charts
-6. **PO Details Drill-Down**:
+4. **Scheduled SAP refresh** (automated): OS invokes `php artisan schedule:run` every minute; Laravel runs `powitheta:refresh-from-sap --scheduled` at configured times (default **06:00** and **18:00** in `config('app.timezone')`, production uses **`Asia/Makassar`** for WITA). Staging-only truncate of `powithetas`, then same `sync_from_sap` + upsert `performConvertToPo()` path as the UI. Times and SAP date mode are stored in `storage/app/powitheta_schedule.json` (superadmin: **Admin → POWITHETA sync schedule**). In-progress state is exposed via cache and **`GET /api/powitheta-sync-status`** for the global ticker partial.
+5. **Dashboard**: Real-time aggregation → Chart.js/ApexCharts visualizations
+6. **Yearly Dashboard**: Data aggregation → JSON encoding → ApexCharts rendering → Interactive charts
+7. **PO Details Drill-Down**:
    - Dashboard link click → Filter parameters (project, year, month, budget_type)
    - Server-side data grouping using Laravel collections (groupBy, map)
    - Aggregation of item counts and total amounts per PO
@@ -274,6 +278,29 @@ graph TD
     AD --> AE[Display Line Items Table]
 ```
 
+### POWITHETA scheduled SAP sync (implemented)
+
+```mermaid
+flowchart LR
+    subgraph os [Production OS]
+        cron["cron or Task Scheduler\nevery minute"]
+    end
+    subgraph laravel [Laravel]
+        sr["php artisan schedule:run"]
+        k["Console Kernel\ndailyAt times from JSON"]
+        cmd["powitheta:refresh-from-sap\n--scheduled"]
+    end
+    subgraph work [Job]
+        t["Truncate powithetas only"]
+        sap["SAP import + performConvertToPo\nupsert"]
+        h["PowithetaSyncHistory row"]
+    end
+    cron --> sr --> k --> cmd
+    cmd --> t --> sap --> h
+```
+
+**Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). See [decisions.md](decisions.md) (POWITHETA timezone + scheduler) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
+
 ## Security Implementation
 
 ### Authentication & Authorization
@@ -313,3 +340,4 @@ graph TD
 -   **File Storage**: Local storage for Excel imports/exports
 -   **Caching**: Laravel's file/database caching for dashboard data
 -   **Logging**: Laravel's logging system for error tracking
+-   **Laravel scheduler**: After `git pull` / deploy, ensure **`APP_TIMEZONE`** in `.env` matches business intent (e.g. `Asia/Makassar` for WITA). Configure **cron** (Linux) or **Windows Task Scheduler** to run `php artisan schedule:run` **every minute** from the application root, as the same user that owns the project files. Verify with `php artisan schedule:list`. Without this, scheduled POWITHETA SAP syncs never run automatically. **Windows Server + XAMPP**: [deploy-production-windows-xampp.md](deploy-production-windows-xampp.md).

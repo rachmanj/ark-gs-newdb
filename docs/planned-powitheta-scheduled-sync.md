@@ -1,0 +1,85 @@
+# Scheduled POWITHETA staging refresh + SAP sync
+
+**Status**: **Implemented** (2026-03-25). Production still requires **OS-level** `php artisan schedule:run` every minute (see [architecture.md](architecture.md) deployment section and [decisions.md](decisions.md)).
+
+**Depends on**: [planned-powitheta-po-upsert.md](planned-powitheta-po-upsert.md) — implemented: upsert `performConvertToPo()` + unique `doc_num` + staging-only truncate for manual and scheduled paths.
+
+---
+
+## Current behavior
+
+1. **Staging only**: Scheduled job truncates **`powithetas`** only, then SAP import + **`performConvertToPo()`** (upsert rules match manual flow).
+
+2. **Command**: `php artisan powitheta:refresh-from-sap` with **`--scheduled`** for Laravel-scheduled runs; writes **`powitheta_sync_histories`**, sets cache flag **`powitheta_scheduled_sync_in_progress`** during execution.
+
+3. **Schedule**: `app/Console/Kernel.php` registers `powitheta:refresh-from-sap --scheduled` at each time from **`PowithetaScheduleSettings::normalizedSyncTimes()`** (defaults **06:00** and **18:00**), with **`withoutOverlapping(20)`**.
+
+4. **Configuration**: `storage/app/powitheta_schedule.json` (gitignored; created by defaults or **Admin → POWITHETA sync schedule**): `enabled`, `sync_times`, `sap_date_mode`, optional custom SAP date range for scheduled runs only.
+
+5. **Timezone**: `config('app.timezone')` from **`APP_TIMEZONE`** (default **`Asia/Makassar`** for WITA). `dailyAt()` uses this timezone.
+
+6. **UX**: Public **`GET /api/powitheta-sync-status`** + ticker partial; superadmin page lists **recent sync history**.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  cron[Cron_or_TaskScheduler]
+  artisan[php_artisan_schedule_run]
+  kernel[Console_Kernel_schedule]
+  cmd[Artisan_powitheta_refresh_scheduled]
+  truncStaging[Truncate_powithetas_only]
+  sync[SAP_sync_and_upsert_convert]
+  cron --> artisan --> kernel --> cmd
+  cmd --> truncStaging --> sync
+```
+
+---
+
+## Key files
+
+| Area | Path |
+|------|------|
+| Command | `app/Console/Commands/PowithetaRefreshFromSapCommand.php` |
+| Schedule | `app/Console/Kernel.php` |
+| Settings | `app/Services/PowithetaScheduleSettings.php`, `storage/app/powitheta_schedule.json` |
+| History model | `app/Models/PowithetaSyncHistory.php` |
+| Admin UI | `app/Http/Controllers/PowithetaScheduleController.php`, `resources/views/admin/powitheta-schedule.blade.php` |
+| Sync + upsert | `app/Http/Controllers/PowithetaController.php` (`sync_from_sap`, `performConvertToPo`) |
+| SAP dates | `app/Services/SapService.php` (`resolvePowithetaSapDateRange`) |
+| Status API | `routes/web.php` → `GET /api/powitheta-sync-status` |
+| Ticker | `resources/views/templates/partials/powitheta-sync-ticker.blade.php` (included from main layout + login) |
+| App timezone | `config/app.php` (`APP_TIMEZONE`) |
+
+---
+
+## Production deploy (after `git pull`)
+
+1. `.env`: `APP_TIMEZONE=Asia/Makassar` (or chosen zone), valid `APP_KEY`, DB, SAP credentials.
+2. `composer install`, `php artisan migrate --force`, `php artisan config:cache` as usual.
+3. **One-time**: configure cron or Task Scheduler so **`php artisan schedule:run`** runs **every minute** from the app root.
+4. Verify: `php artisan schedule:list` shows two entries at **06:00** and **18:00** with **+08:00** when using Makassar.
+
+**Windows Server + XAMPP**: step-by-step guide — [deploy-production-windows-xampp.md](deploy-production-windows-xampp.md).
+
+---
+
+## Alignment with PO upsert plan
+
+| Topic | Behavior |
+|--------|----------|
+| Before SAP import | Truncate **`powithetas`** only |
+| After import | **`performConvertToPo()`** upsert (new PO full create; existing PO header fields only) |
+| Manual “Sync from SAP” | Modal dates; scheduled runs use JSON SAP date settings |
+
+---
+
+## References
+
+- [docs/planned-powitheta-po-upsert.md](planned-powitheta-po-upsert.md)
+- [docs/architecture.md](architecture.md) — POWITHETA scheduled sync + Mermaid
+- `MEMORY.md` [020] App timezone WITA + POWITHETA sync 06:00 / 18:00
+
+*Updated 2026-03-25: status set to implemented; operational and timezone guidance added.*

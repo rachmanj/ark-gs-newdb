@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: [Auto-updated by AI]
+**Last Updated**: 2026-03-25
 
 ## Task Management Guidelines
 
@@ -59,6 +59,8 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P2: POWITHETA scheduled SAP sync + WITA timezone + ops docs [PowithetaRefreshFromSapCommand; Kernel; powitheta_schedule.json; APP_TIMEZONE Asia/Makassar; OS cron/Task Scheduler; docs/planned-powitheta-scheduled-sync.md] (completed: 2026-03-25)`
+-   `[done] P2: POWITHETA PO upsert — new PO full create, existing PO header only [docs/planned-powitheta-po-upsert.md; performConvertToPo; migration unique doc_num] (completed: 2026-03-25)`
 -   `[done] P1: Add PO Exclusions feature for excluding POs from filters [PoExclusion model, PoExclusionService, PoExclusionController; applied to CapexController, YearlyIndexController, DashboardOtherController, POController, PowithetaExport; Admin menu link; bulk add with comma/newline] (completed: 2026-02-25)`
 -   `[done] P1: Implement grouped PO Sent Details view with expandable line items [POController::po_sent_details() with collection groupBy; resources/views/dashboard/daily/po_sent_details.blade.php; DataTables child rows; condensed 198 items to 59 PO Numbers] (completed: 2025-12-03)`
 -   `[done] P1: Migrate dashboard libraries from CDN to local assets [Chart.js and ApexCharts in public/adminlte/plugins; updated 5 blade files] (completed: 2025-10-31)`

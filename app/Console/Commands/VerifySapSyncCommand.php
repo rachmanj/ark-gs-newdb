@@ -62,7 +62,7 @@ class VerifySapSyncCommand extends Command
                 'model' => Powitheta::class,
                 'serviceMethod' => 'executePowithetaSqlQuery',
                 'dateColumn' => 'posting_date',
-                'defaultStart' => '2024-12-01',
+                'defaultStart' => Carbon::now()->startOfYear()->toDateString(),
                 'defaultEnd' => Carbon::now()->toDateString(),
                 'keyColumns' => ['po_no', 'item_code', 'project_code'],
             ],

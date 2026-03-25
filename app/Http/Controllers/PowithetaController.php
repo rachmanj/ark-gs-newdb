@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Supplier;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\PowithetaSyncHistory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -39,23 +40,11 @@ class PowithetaController extends Controller
 
     public function truncate()
     {
-        // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-
         try {
-            // Truncate tables in correct order
-            PurchaseOrderItem::truncate();
-            PurchaseOrder::truncate();
             Powitheta::truncate();
 
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
-            return redirect()->route('powitheta.index')->with('success', 'Data has been truncated.');
+            return redirect()->route('powitheta.index')->with('success', 'POWITHETA staging table (powithetas) has been cleared. Purchase orders in the system were not deleted.');
         } catch (\Exception $e) {
-            // Make sure to re-enable foreign key checks even if an error occurs
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
             return redirect()->route('powitheta.index')->with('error', 'Error truncating data: ' . $e->getMessage());
         }
     }
@@ -73,26 +62,48 @@ class PowithetaController extends Controller
 
     public function sync_from_sap(Request $request)
     {
+        $history = $this->resolvePowithetaSyncHistory($request);
+
         try {
             ini_set('max_execution_time', 600);
 
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
-            $startDate = !empty($startDate) ? $startDate : null;
-            $endDate = !empty($endDate) ? $endDate : null;
+            $startDate = ! empty($startDate) ? $startDate : null;
+            $endDate = ! empty($endDate) ? $endDate : null;
 
             $sapService = new SapService();
+            [$resolvedStart, $resolvedEnd] = $sapService->resolvePowithetaSapDateRange($startDate, $endDate);
             $results = $sapService->executePowithetaSqlQuery($startDate, $endDate);
 
             if (empty($results)) {
+                $msg = 'No data found for the selected date range.';
+                $this->finishPowithetaSyncHistory($history, 'success', [
+                    'message' => $msg,
+                    'imported_count' => 0,
+                    'total_records' => 0,
+                    'convert_success' => null,
+                    'convert_message' => null,
+                    'sap_date_start' => $resolvedStart,
+                    'sap_date_end' => $resolvedEnd,
+                ]);
+
                 if ($request->expectsJson()) {
                     return response()->json([
-                        'success' => false,
-                        'message' => 'No data found for the selected date range.'
+                        'success' => true,
+                        'message' => $msg,
+                        'imported_count' => 0,
+                        'total_records' => 0,
+                        'no_sap_rows' => true,
+                        'sap_date_range' => [
+                            'start' => $resolvedStart,
+                            'end' => $resolvedEnd,
+                        ],
                     ], 200);
                 }
-                return redirect()->route('powitheta.index')->with('error', 'No data found for the selected date range.');
+
+                return redirect()->route('powitheta.index')->with('warning', $msg);
             }
 
             $importedCount = 0;
@@ -135,14 +146,23 @@ class PowithetaController extends Controller
 
                 DB::commit();
 
-                // Call convert_to_po method to process the imported data
                 $convertResult = $this->performConvertToPo();
 
-                $message = "Successfully synced {$importedCount} Powitheta records from SAP.";
+                $message = "Successfully synced {$importedCount} Powitheta records from SAP (date range {$resolvedStart} to {$resolvedEnd}).";
                 if ($convertResult['success']) {
-                    $message .= " " . $convertResult['message'];
+                    $message .= ' '.$convertResult['message'];
                 }
-                
+
+                $this->finishPowithetaSyncHistory($history, 'success', [
+                    'message' => $message,
+                    'imported_count' => $importedCount,
+                    'total_records' => $totalRecords,
+                    'convert_success' => $convertResult['success'] ?? null,
+                    'convert_message' => $convertResult['message'] ?? null,
+                    'sap_date_start' => $resolvedStart,
+                    'sap_date_end' => $resolvedEnd,
+                ]);
+
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
@@ -150,7 +170,11 @@ class PowithetaController extends Controller
                         'imported_count' => $importedCount,
                         'total_records' => $totalRecords,
                         'convert_success' => $convertResult['success'],
-                        'convert_message' => $convertResult['message']
+                        'convert_message' => $convertResult['message'],
+                        'sap_date_range' => [
+                            'start' => $resolvedStart,
+                            'end' => $resolvedEnd,
+                        ],
                     ], 200);
                 }
 
@@ -160,17 +184,64 @@ class PowithetaController extends Controller
                 throw $e;
             }
         } catch (\Exception $e) {
-            $errorMessage = 'Error syncing from SAP: ' . $e->getMessage();
-            
+            $this->failPowithetaSyncHistory($history, $e);
+
+            $errorMessage = 'Error syncing from SAP: '.$e->getMessage();
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage
+                    'message' => $errorMessage,
                 ], 500);
             }
-            
+
             return redirect()->route('powitheta.index')->with('error', $errorMessage);
         }
+    }
+
+    private function resolvePowithetaSyncHistory(Request $request): ?PowithetaSyncHistory
+    {
+        if (app()->runningInConsole()) {
+            $id = $request->input('sync_history_id');
+            if ($id) {
+                return PowithetaSyncHistory::findOrFail($id);
+            }
+
+            return null;
+        }
+
+        return PowithetaSyncHistory::create([
+            'trigger' => 'manual',
+            'user_id' => auth()->id(),
+            'status' => 'running',
+            'started_at' => now(),
+        ]);
+    }
+
+    private function finishPowithetaSyncHistory(?PowithetaSyncHistory $history, string $status, array $data = []): void
+    {
+        if (! $history) {
+            return;
+        }
+
+        $history->update(array_merge([
+            'status' => $status,
+            'finished_at' => now(),
+        ], $data));
+    }
+
+    private function failPowithetaSyncHistory(?PowithetaSyncHistory $history, \Throwable $e): void
+    {
+        if (! $history) {
+            return;
+        }
+
+        $history->update([
+            'status' => 'failed',
+            'finished_at' => now(),
+            'message' => $e->getMessage(),
+            'error_detail' => mb_substr($e->getTraceAsString(), 0, 65000),
+        ]);
     }
 
     private function convertSqlDate($date)
@@ -435,49 +506,50 @@ class PowithetaController extends Controller
         ]);
     }
 
-    // Helper method to perform the conversion
+    /**
+     * Creates or updates purchase_orders / purchase_order_items only from powithetas staging data.
+     */
     private function performConvertToPo()
     {
         try {
-            // Increase max execution time for large conversion operations
-            ini_set('max_execution_time', 600); // 5 minutes
+            ini_set('max_execution_time', 600);
 
-            // Get all unique PO records grouped by PO number
-            $poGroups = Powitheta::select(
-                'po_no',
-                'posting_date',
-                'create_date',
-                'po_delivery_date',
-                'vendor_code',
-                'vendor_name',
-                'po_currency',
-                'project_code',
-                'dept_code',
-                'po_status',
-                'unit_no',
-                'pr_no',
-                'po_eta',
-                'po_delivery_status',
-                'budget_type'
-            )
-                ->distinct('po_no')
-                ->get();
+            $poNumbers = Powitheta::query()
+                ->whereNotNull('po_no')
+                ->where('po_no', '!=', '')
+                ->distinct()
+                ->pluck('po_no');
 
-            if ($poGroups->isEmpty()) {
+            if ($poNumbers->isEmpty()) {
                 return [
                     'success' => false,
-                    'message' => 'No data to convert'
+                    'message' => 'No data to convert',
                 ];
             }
 
-            $importedCount = 0;
+            $createdCount = 0;
+            $updatedCount = 0;
             $createdSuppliers = 0;
 
-            // Disable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            foreach ($poNumbers as $poNo) {
+                $poGroup = Powitheta::where('po_no', $poNo)->orderBy('id')->first();
+                if (! $poGroup) {
+                    continue;
+                }
 
-            foreach ($poGroups as $poGroup) {
-                // Find or create supplier
+                $existing = PurchaseOrder::where('doc_num', $poNo)->first();
+
+                if ($existing) {
+                    $existing->update([
+                        'po_delivery_date' => $poGroup->po_delivery_date,
+                        'po_status' => $poGroup->po_status,
+                        'po_delivery_status' => $poGroup->po_delivery_status,
+                    ]);
+                    $updatedCount++;
+
+                    continue;
+                }
+
                 $supplier = Supplier::firstOrCreate(
                     ['code' => $poGroup->vendor_code],
                     ['name' => $poGroup->vendor_name]
@@ -487,11 +559,9 @@ class PowithetaController extends Controller
                     $createdSuppliers++;
                 }
 
-                // Calculate total PO price
                 $totalPoPrice = Powitheta::where('po_no', $poGroup->po_no)
                     ->sum('item_amount');
 
-                // Create Purchase Order
                 $purchaseOrder = PurchaseOrder::create([
                     'doc_num' => $poGroup->po_no,
                     'doc_date' => $poGroup->posting_date,
@@ -508,10 +578,9 @@ class PowithetaController extends Controller
                     'pr_no' => $poGroup->pr_no,
                     'po_eta' => $poGroup->po_eta,
                     'budget_type' => $poGroup->budget_type,
-                    'po_delivery_status' => $poGroup->po_delivery_status
+                    'po_delivery_status' => $poGroup->po_delivery_status,
                 ]);
 
-                // Get and create items for this PO
                 $poItems = Powitheta::where('po_no', $poGroup->po_no)
                     ->select([
                         'item_code',
@@ -519,7 +588,7 @@ class PowithetaController extends Controller
                         'qty',
                         'uom',
                         'unit_price',
-                        'item_amount'
+                        'item_amount',
                     ])
                     ->get();
 
@@ -535,22 +604,30 @@ class PowithetaController extends Controller
                     ]);
                 }
 
-                $importedCount++;
+                $createdCount++;
             }
 
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            $parts = [];
+            if ($createdCount > 0) {
+                $parts[] = "{$createdCount} new PO(s) created with lines";
+            }
+            if ($updatedCount > 0) {
+                $parts[] = "{$updatedCount} existing PO header(s) updated (delivery date & status fields only)";
+            }
+            if ($createdSuppliers > 0) {
+                $parts[] = "{$createdSuppliers} new supplier(s)";
+            }
+
+            $message = count($parts) ? implode(' · ', $parts) : 'No changes applied';
 
             return [
                 'success' => true,
-                'message' => "Successfully converted {$importedCount} Purchase Orders" .
-                    ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : "")
+                'message' => $message,
             ];
         } catch (\Exception $e) {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
             return [
                 'success' => false,
-                'message' => 'Error converting data: ' . $e->getMessage()
+                'message' => 'Error converting data: '.$e->getMessage(),
             ];
         }
     }

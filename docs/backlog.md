@@ -1,7 +1,26 @@
 **Purpose**: Future features and improvements prioritized by value
-**Last Updated**: 2025-01-16
+**Last Updated**: 2026-03-25
 
 # Feature Backlog
+
+## Deferred (blocked on environment)
+
+*(None — previously deferred POWITHETA items are implemented; see **Recently completed**.)*
+
+---
+
+## Recently completed (reference)
+
+### Scheduled POWITHETA truncate + SAP sync (twice daily)
+
+- **Done**: Laravel command `powitheta:refresh-from-sap --scheduled`, Kernel schedule from JSON, history table, admin UI, ticker, WITA via `APP_TIMEZONE`, production cron/Task Scheduler documented.
+- **Docs**: [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md), [architecture.md](architecture.md), [decisions.md](decisions.md)
+
+### POWITHETA → purchase orders upsert (header patch + one-time lines)
+
+- **Done**: `performConvertToPo()` upsert + `purchase_orders.doc_num` unique index; see [planned-powitheta-po-upsert.md](planned-powitheta-po-upsert.md).
+
+---
 
 ## Next Sprint (High Priority)
 
