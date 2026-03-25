@@ -25,6 +25,12 @@ class Kernel extends ConsoleKernel
             $schedule->command('powitheta:refresh-from-sap --scheduled')
                 ->dailyAt($time)
                 ->withoutOverlapping(20);
+
+            if ($config['staging_modules_enabled'] ?? true) {
+                $schedule->command('staging-modules:sync-from-sap --scheduled')
+                    ->dailyAt($time)
+                    ->withoutOverlapping(25);
+            }
         }
     }
 

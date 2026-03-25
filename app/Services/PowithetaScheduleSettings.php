@@ -16,6 +16,7 @@ class PowithetaScheduleSettings
             'sap_date_mode' => 'current_year',
             'sap_custom_start' => null,
             'sap_custom_end' => null,
+            'staging_modules_enabled' => true,
         ];
     }
 
@@ -55,6 +56,9 @@ class PowithetaScheduleSettings
             'sap_custom_end' => isset($config['sap_custom_end']) && $config['sap_custom_end'] !== ''
                 ? $config['sap_custom_end']
                 : null,
+            'staging_modules_enabled' => isset($config['staging_modules_enabled'])
+                ? (bool) $config['staging_modules_enabled']
+                : $defaults['staging_modules_enabled'],
         ];
         File::put(self::path(), json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }

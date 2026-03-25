@@ -27,6 +27,16 @@
 
 ## Project Memory Entries
 
+### [021] GRPO / MIGI / Incoming scheduled SAP sync with dedupe (2026-03-25) ✅ COMPLETE
+
+**Challenge**: Run automatic SAP sync for GRPO, MIGI, Incoming on same schedule as POWITHETA without truncating; avoid duplicate rows on repeat runs.
+
+**Solution**: `dedupe=1` on JSON sync inserts only if natural key missing — GRPO: `po_no`+`grpo_no`+`item_code`; MIGI/Incoming: `posting_date`+`doc_type`+`doc_no`+`item_code`+`project_code`+`dept_code`. `staging-modules:sync-from-sap --scheduled` (Jan 1→today) runs three modules sequentially, skip-and-continue on failure; `staging_module_sync_histories` + `staging_modules_enabled` in `powitheta_schedule.json`; MySQL prefixed composite indexes for EXISTS lookups.
+
+**Key Learning**: Manual modal sync unchanged (no `dedupe`); scheduled path uses `Request` + controller `sync_from_sap` with `Accept: application/json`.
+
+---
+
 ### [020] App timezone WITA + POWITHETA sync 06:00 / 18:00 (2026-03-25) ✅ COMPLETE
 
 **Challenge**: Scheduled POWITHETA runs must align with 06:00 and 18:00 WITA, not UTC.

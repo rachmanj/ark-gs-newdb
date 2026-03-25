@@ -23,6 +23,7 @@ use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\PoExclusionController;
 use App\Http\Controllers\ProductionPlanController;
 use App\Http\Controllers\PowithetaScheduleController;
+use App\Models\StagingModuleSyncHistory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,32 @@ Route::get('/api/powitheta-sync-status', function () {
         'started_at' => is_array($payload) ? ($payload['started_at'] ?? null) : null,
     ]);
 })->name('api.powitheta-sync-status');
+
+Route::get('/api/staging-modules-sync-status', function () {
+    $payload = Cache::get('staging_modules_scheduled_sync_in_progress');
+    $lastRunId = StagingModuleSyncHistory::query()->orderByDesc('started_at')->value('run_id');
+    $lastRows = $lastRunId
+        ? StagingModuleSyncHistory::query()->where('run_id', $lastRunId)->orderBy('module')->get()
+        : collect();
+
+    return response()->json([
+        'in_progress' => Cache::has('staging_modules_scheduled_sync_in_progress'),
+        'started_at' => is_array($payload) ? ($payload['started_at'] ?? null) : null,
+        'sap_date_start' => is_array($payload) ? ($payload['sap_date_start'] ?? null) : null,
+        'sap_date_end' => is_array($payload) ? ($payload['sap_date_end'] ?? null) : null,
+        'last_run_modules' => $lastRows->map(function (StagingModuleSyncHistory $r) {
+            return [
+                'module' => $r->module,
+                'status' => $r->status,
+                'message' => $r->message,
+                'imported_count' => $r->imported_count,
+                'skipped_duplicate_count' => $r->skipped_duplicate_count,
+                'started_at' => $r->started_at?->toIso8601String(),
+                'finished_at' => $r->finished_at?->toIso8601String(),
+            ];
+        })->values(),
+    ]);
+})->name('api.staging-modules-sync-status');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'index'])->name('login');

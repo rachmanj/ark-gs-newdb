@@ -7,6 +7,7 @@ use App\Exports\MigiExportThisYear;
 use App\Imports\MigiImport;
 use App\Models\Migi;
 use App\Services\SapService;
+use App\Services\StagingModuleDedupe;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,20 +53,34 @@ class MigiController extends Controller
             $startDate = !empty($startDate) ? $startDate : null;
             $endDate = !empty($endDate) ? $endDate : null;
 
+            $dedupe = $request->boolean('dedupe');
+
             $sapService = new SapService();
             $results = $sapService->executeMigiSqlQuery($startDate, $endDate);
 
             if (empty($results)) {
                 if ($request->expectsJson()) {
+                    if ($dedupe) {
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'No rows returned from SAP for the selected date range.',
+                            'imported_count' => 0,
+                            'skipped_duplicate_count' => 0,
+                            'total_records' => 0,
+                        ], 200);
+                    }
+
                     return response()->json([
                         'success' => false,
-                        'message' => 'No data found for the selected date range.'
+                        'message' => 'No data found for the selected date range.',
                     ], 200);
                 }
+
                 return redirect()->route('migi.index')->with('error', 'No data found for the selected date range.');
             }
 
             $importedCount = 0;
+            $skippedCount = 0;
             $totalRecords = count($results);
 
             DB::beginTransaction();
@@ -84,6 +99,19 @@ class MigiController extends Controller
                         'batch' => 1,
                     ];
 
+                    if ($dedupe && StagingModuleDedupe::migiStyleRowExists(
+                        Migi::class,
+                        $row->posting_date ?? null,
+                        $migiData['doc_type'],
+                        $migiData['doc_no'],
+                        $migiData['item_code'],
+                        $migiData['project_code'],
+                        $migiData['dept_code']
+                    )) {
+                        $skippedCount++;
+                        continue;
+                    }
+
                     Migi::create($migiData);
                     $importedCount++;
                 }
@@ -91,13 +119,17 @@ class MigiController extends Controller
                 DB::commit();
 
                 $message = "Successfully synced {$importedCount} Migi records from SAP.";
-                
+                if ($dedupe && $skippedCount > 0) {
+                    $message .= " ({$skippedCount} duplicate line(s) skipped.)";
+                }
+
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
                         'message' => $message,
                         'imported_count' => $importedCount,
-                        'total_records' => $totalRecords
+                        'skipped_duplicate_count' => $skippedCount,
+                        'total_records' => $totalRecords,
                     ], 200);
                 }
 

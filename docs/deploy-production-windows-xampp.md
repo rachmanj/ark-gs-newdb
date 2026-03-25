@@ -132,48 +132,71 @@ C:\xampp\php\php.exe artisan schedule:run
 
 This is **one-time** per server (until the path or PHP binary changes).
 
-### 7.1 Create the task
+### 7.1 GUI limitation (repeat every 1 minute)
+
+On many **Windows Server** builds, the Task Scheduler **Triggers** dialog only allows **Repeat task every** down to **5 minutes**, not 1 minute. Laravel’s docs recommend **`schedule:run` every minute** so jobs like `dailyAt('06:47')` are never missed.
+
+**If you only use `:00` times (e.g. 06:00 and 18:00 WITA forever):** you **do not need** `schtasks` or a 1-minute repeat. The GUI’s **every 5 minutes** is enough **if** the trigger is aligned so runs include **:00** each hour (see **7.4**). No need for section **7.2** in that case.
+
+**If you might use non–5-minute-aligned times** in **Admin → POWITHETA sync schedule** (e.g. `06:03`, `09:47`): use **`schtasks`** (section **7.2**) or repeat every **1 minute**, or those minutes can be skipped when the task only runs every 5 minutes on a bad offset.
+
+**Acceptable GUI-only approach:** repeat every **5 minutes**, trigger start **e.g. `00:00:00` daily**, duration **Indefinitely** — runs at `:00`, `:05`, `:10`, … so **06:00** and **18:00** are hit. **Do not** start the repeat at e.g. `06:02`, or you can miss **:00**.
+
+---
+
+### 7.2 Recommended: `schtasks` / one-minute schedule
+
+Create a **batch file** so the working directory is always correct (adjust paths):
+
+**`C:\Scripts\ark-gs-laravel-scheduler.bat`** (create folder as needed):
+
+```bat
+@echo off
+cd /d D:\project\ark-gs
+C:\xampp\php\php.exe artisan schedule:run >> C:\Scripts\ark-gs-scheduler.log 2>&1
+```
+
+Open **Command Prompt as Administrator** and run (replace `YOURDOMAIN\svcuser` and task name; you will be prompted for password):
+
+```bat
+schtasks /Create /TN "ARK-GS Laravel Scheduler" /TR "C:\Scripts\ark-gs-laravel-scheduler.bat" /SC MINUTE /MO 1 /RU "YOURDOMAIN\svcuser" /RP
+```
+
+- **`/SC MINUTE /MO 1`** = every **1 minute** (works even when the GUI minimum is 5).
+- **`/RP`** with no value prompts for the account password once.
+
+To update an existing task later:
+
+```bat
+schtasks /Delete /TN "ARK-GS Laravel Scheduler" /F
+REM then run Create again with new paths
+```
+
+Verify: **Task Scheduler** → find the task → **Last Run Time** / **Last Run Result**; check `C:\Scripts\ark-gs-scheduler.log` if you added logging.
+
+---
+
+### 7.3 Alternative: GUI task + manual XML (advanced)
+
+If you must use the graphical task editor, you can **export** a task from another machine that supports **1 minute** repetition as **XML**, edit **`<Repetition><Interval>PT1M</Interval>`**, then **Import** on the server. This is fragile across versions; prefer **7.2**.
+
+---
+
+### 7.4 GUI-only manual task (if you skip `schtasks`)
 
 1. Open **Task Scheduler** (`taskschd.msc`).
-2. **Create Task…** (not a simple “Basic Task” if you need full control).
+2. **Create Task…**
 3. **General** tab:
    - **Name**: e.g. `ARK-GS Laravel Scheduler`
-   - Select **Run whether user is logged on or not**.
-   - Check **Run with highest privileges** only if your policy requires it (often not needed).
-   - **Configure for**: your Windows Server version.
-
-### 7.2 Trigger (every minute)
-
-1. Tab **Triggers** → **New…**
-2. **Begin the task**: **On a schedule**
-3. **Settings**: **Daily** — set start date/time to **today** and a time **in the past** or **now** (e.g. 00:00:00).
-4. **Advanced settings**:
-   - Check **Repeat task every**: `1 minute`
-   - **For a duration of**: **Indefinitely** (or **1 day** and add a second trigger if your version behaves oddly — most use **Indefinitely**).
-5. **Enabled**: checked → OK.
-
-### 7.3 Action (call PHP + Artisan)
-
-1. Tab **Actions** → **New…**
-2. **Action**: **Start a program**
-3. **Program/script**: full path to PHP, e.g.  
-   `C:\xampp\php\php.exe`
-4. **Add arguments**:  
-   `artisan schedule:run`
-5. **Start in (optional)** — **required** for Laravel:  
-   `D:\project\ark-gs`  
-   (your real application root, same folder as `artisan`)
-
-Click OK.
-
-### 7.4 Conditions / Settings
-
-- **Conditions**: Uncheck **Start only if on AC power** (for servers).
-- **Settings**: Prefer **Allow task to be run on demand**; **If task fails, restart every**… optional.
-
-### 7.5 Credentials
-
-Save the task. Windows will prompt for the **password** of the user that will run the job. Use the **service account** that has rights to the project folder and to reach **MySQL** and **SAP SQL Server**.
+   - **Run whether user is logged on or not**
+   - **Configure for**: your Windows Server version
+4. **Triggers** → **New…** → **Daily**, start **00:00:00**, **Repeat every 5 minutes** (if 1 minute is unavailable), **for a duration of Indefinitely** — ensure the start time is **on a 5-minute boundary** (`:00`, `:05`, …) so **06:00** and **18:00** are hit.
+5. **Actions** → **New…** → **Start a program**  
+   - Program: `C:\xampp\php\php.exe`  
+   - Arguments: `artisan schedule:run`  
+   - **Start in:** `D:\project\ark-gs`
+6. **Conditions**: Uncheck **Start the task only if the computer is on AC power** (servers).
+7. Save and enter credentials for the **service account** that can read/write the project and reach **MySQL** and **SAP SQL Server**.
 
 ---
 
@@ -218,6 +241,7 @@ Each release:
 | Symptom | Check |
 |--------|--------|
 | Scheduled sync never runs | Task Scheduler **Last Run Result** (0x0 = success); **History** enabled; correct **Start in** folder; PHP path. |
+| GUI only allows repeat every 5 minutes | Use **`schtasks /SC MINUTE /MO 1`** with a `.bat` wrapper (section 7.2). |
 | Wrong time (not WITA) | `APP_TIMEZONE` in `.env`; then `php artisan config:clear` and `config:cache`. |
 | Permission errors in logs | User running the task has write access to `storage\` and `bootstrap\cache\`. |
 | SAP / DB errors | Same as manual “Sync from SAP”; verify `SAP_SQL_*` and firewall from app server to SQL Server. |
@@ -232,4 +256,4 @@ Each release:
 
 ---
 
-*Last updated: 2026-03-25*
+*Last updated: 2026-03-25 (Task Scheduler GUI 5-minute minimum: see sections 7.1–7.2)*

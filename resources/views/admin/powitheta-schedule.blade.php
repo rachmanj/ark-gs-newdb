@@ -53,6 +53,20 @@
                         </div>
 
                         <div class="form-group">
+                            <input type="hidden" name="staging_modules_enabled" value="0">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="staging_modules_enabled"
+                                    name="staging_modules_enabled" value="1"
+                                    {{ old('staging_modules_enabled', $staging_modules_enabled ? '1' : '0') === '1' ? 'checked' : '' }}>
+                                <label class="custom-control-label" for="staging_modules_enabled">Also run GRPO, MIGI,
+                                    Incoming SAP sync at the same times</label>
+                            </div>
+                            <p class="text-muted small mb-0">Uses <code>staging-modules:sync-from-sap --scheduled</code>:
+                                Jan 1 → today, <strong>insert only</strong> with duplicate lines skipped (same PO/GRPO/item
+                                or same posting/doc/item keys). Requires master “Enable scheduled sync” above.</p>
+                        </div>
+
+                        <div class="form-group">
                             <label for="sync_time_1">First run (server local time)</label>
                             <input type="time" class="form-control @error('sync_time_1') is-invalid @enderror"
                                 id="sync_time_1" name="sync_time_1" value="{{ old('sync_time_1', $sync_time_1) }}"
@@ -125,9 +139,71 @@
                 </form>
             </div>
 
+            <div class="card card-outline card-info mt-3">
+                <div class="card-header">
+                    <h3 class="card-title">GRPO / MIGI / Incoming — recent scheduled runs</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-sm table-striped table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Run</th>
+                                <th>Module</th>
+                                <th>Status</th>
+                                <th>SAP range</th>
+                                <th>Imported</th>
+                                <th>Skipped dupes</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($stagingHistories as $runId => $rows)
+                                @foreach ($rows as $h)
+                                    <tr>
+                                        @if ($loop->first)
+                                            <td rowspan="{{ $rows->count() }}" class="text-muted small">
+                                                {{ \Illuminate\Support\Str::limit($runId, 13) }}</td>
+                                        @endif
+                                        <td>{{ $h->module }}</td>
+                                        <td>
+                                            @if ($h->status === 'success')
+                                                <span class="badge badge-success">success</span>
+                                            @elseif($h->status === 'failed')
+                                                <span class="badge badge-danger">failed</span>
+                                            @elseif($h->status === 'running')
+                                                <span class="badge badge-warning">running</span>
+                                            @else
+                                                {{ $h->status }}
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($h->sap_date_start && $h->sap_date_end)
+                                                {{ $h->sap_date_start->format('Y-m-d') }}
+                                                → {{ $h->sap_date_end->format('Y-m-d') }}
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
+                                        <td>{{ $h->imported_count ?? '—' }}</td>
+                                        <td>{{ $h->skipped_duplicate_count ?? '—' }}</td>
+                                        <td class="text-truncate" style="max-width:220px;" title="{{ $h->message }}">
+                                            {{ \Illuminate\Support\Str::limit($h->message ?? '', 80) }}</td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No GRPO/MIGI/Incoming scheduled history
+                                        yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card card-outline card-secondary mt-3">
                 <div class="card-header">
-                    <h3 class="card-title">Recent sync history</h3>
+                    <h3 class="card-title">PO With ETA — recent sync history</h3>
                 </div>
                 <div class="card-body table-responsive p-0">
                     <table class="table table-sm table-striped table-hover mb-0">

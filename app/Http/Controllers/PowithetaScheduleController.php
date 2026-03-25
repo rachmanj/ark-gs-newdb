@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PowithetaSyncHistory;
+use App\Models\StagingModuleSyncHistory;
 use App\Services\PowithetaScheduleSettings;
 use Illuminate\Http\Request;
 
@@ -30,14 +31,22 @@ class PowithetaScheduleController extends Controller
             ->limit(40)
             ->get();
 
+        $stagingHistories = StagingModuleSyncHistory::query()
+            ->orderByDesc('started_at')
+            ->limit(60)
+            ->get()
+            ->groupBy('run_id');
+
         return view('admin.powitheta-schedule', [
             'enabled' => $config['enabled'] ?? true,
+            'staging_modules_enabled' => $config['staging_modules_enabled'] ?? true,
             'sync_time_1' => $times[0] ?? '06:00',
             'sync_time_2' => $times[1] ?? '18:00',
             'sap_date_mode' => $config['sap_date_mode'] ?? 'current_year',
             'sap_custom_start' => $config['sap_custom_start'] ?? '',
             'sap_custom_end' => $config['sap_custom_end'] ?? '',
             'histories' => $histories,
+            'stagingHistories' => $stagingHistories,
         ]);
     }
 
@@ -45,6 +54,7 @@ class PowithetaScheduleController extends Controller
     {
         $validated = $request->validate([
             'enabled' => 'nullable|boolean',
+            'staging_modules_enabled' => 'nullable|boolean',
             'sync_time_1' => ['required', 'regex:/^\d{1,2}:\d{2}$/'],
             'sync_time_2' => ['required', 'regex:/^\d{1,2}:\d{2}$/'],
             'sap_date_mode' => 'required|in:current_year,custom',
@@ -54,6 +64,7 @@ class PowithetaScheduleController extends Controller
 
         PowithetaScheduleSettings::save([
             'enabled' => $request->boolean('enabled'),
+            'staging_modules_enabled' => $request->boolean('staging_modules_enabled'),
             'sync_times' => [
                 $validated['sync_time_1'],
                 $validated['sync_time_2'],
