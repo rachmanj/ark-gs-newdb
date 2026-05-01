@@ -18,7 +18,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('history:generate-monthly')
-            ->monthlyOn(1, '10:05')
+            ->dailyAt('23:45')
+            ->when(static function (): bool {
+                return now()->day === now()->daysInMonth;
+            })
             ->withoutOverlapping(60);
 
         $config = PowithetaScheduleSettings::get();

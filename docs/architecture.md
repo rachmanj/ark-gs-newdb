@@ -128,7 +128,7 @@ This document describes the CURRENT WORKING STATE of the application architectur
 
 -   **Budget Types**: Configurable budget categories
 -   **Budget Tracking**: CAPEX vs Regular budget monitoring
--   **History Management**: Manual and batch-captured **monthly** snapshots in **`histories`** (`periode`, `gs_type`, `project_code`, `amount`, `remarks` including `BATCH yyyymmdd`). **UI**: History page modal posts to `HistoryController::generate_monthly`. **CLI**: `php artisan history:generate-monthly` (optional `Y-m-d` capture date; default today) delegates to **`App\Services\MonthlyHistoryCaptureService`**, which reads the same aggregates as **`DashboardDailyController::getDailyData()`** and creates rows for capex, `po_sent`, `grpo_amount`, `incoming_qty`, and `outgoing_qty`. Scheduled: **1st of each month at 10:05** via `app/Console/Kernel.php` (`withoutOverlapping(60)`).
+-   **History Management**: Manual and batch-captured **monthly** snapshots in **`histories`** (`periode`, `gs_type`, `project_code`, `amount`, `remarks` including `BATCH yyyymmdd`). **UI**: History page modal posts to `HistoryController::generate_monthly`. **CLI**: `php artisan history:generate-monthly` (optional `Y-m-d` capture date; default today) delegates to **`App\Services\MonthlyHistoryCaptureService`**, which reads the same aggregates as **`DashboardDailyController::getDailyData()`** and creates rows for capex, `po_sent`, `grpo_amount`, `incoming_qty`, and `outgoing_qty`. Scheduled: **last calendar day of each month at 23:45** via `app/Console/Kernel.php` (`dailyAt('23:45')` + **`when`** only if `now()->day === now()->daysInMonth`; `withoutOverlapping(60)`).
 -   **Monthly vs daily REGULER/CAPEX budget**: The **daily** dashboard (`CapexController::reguler_daily` / `capex_daily`) sums **`budgets.amount`** per project and month (`budget_type_id` 2 for REG, 8 for CAPEX). The **monthly** dashboard (`MonthlyHistoryController::reguler_history_monthly` / `capex_history_monthly`) uses the same tables and **`sum('amount')`** per project/month so totals match daily when the selected month equals the calendar month used on the daily screen. (Earlier `first()` on budget could undercount when multiple budget lines existed.)
 
 ## Database Schema
@@ -201,7 +201,7 @@ All routes follow RESTful conventions with resource controllers:
 2. **Export**: Database queries → Excel/PDF generation → Download
 3. **Conversion**: POWITHETA data → Purchase Orders → Supplier relationships
 4. **Scheduled jobs** (automated): OS invokes **`php artisan schedule:run` every minute** (same timezone rules as below). Laravel **`app/Console/Kernel.php`** registers:
-    - **`history:generate-monthly`**: cron **`5 10 1 * *`** — first day of each month at **10:05** (`withoutOverlapping(60)`).
+    - **`history:generate-monthly`**: **23:45 daily** in cron output, but runs only when **`now()->day`** equals **`daysInMonth`** (last day of the month in `APP_TIMEZONE`); **`withoutOverlapping(60)`**.
     - **`powitheta:refresh-from-sap --scheduled`**: daily at **06:05** and **12:05** (`withoutOverlapping(20)`), only if **`powitheta_schedule.json`** has **`enabled`** true.
     - **`staging-modules:sync-from-sap --scheduled`**: daily at **06:10** and **12:10** (five minutes after each POWITHETA slot; `withoutOverlapping(25)`), only if **`enabled`** and **`staging_modules_enabled`** are true.
 
@@ -307,7 +307,7 @@ flowchart LR
     cmd --> t --> sap --> h
 ```
 
-**Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). After deploy, run **`php artisan schedule:list`** and confirm POWITHETA (06:05 / 12:05), staging-modules (06:10 / 12:10), and **`history:generate-monthly`** (day 1, 10:05). See [decisions.md](decisions.md) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
+**Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). After deploy, run **`php artisan schedule:list`** and confirm POWITHETA (06:05 / 12:05), staging-modules (06:10 / 12:10), and **`history:generate-monthly`** (listed as **23:45** daily; gated to **month-end** in `Kernel::schedule`). See [decisions.md](decisions.md) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
 
 ## Security Implementation
 

@@ -11,7 +11,7 @@ Adjust drive letters and folder names to match your server.
 1. **Application code** from `git pull` (scheduler, command, admin UI, migrations).
 2. **`.env`** with `APP_TIMEZONE` and correct DB/SAP settings.
 3. **Database migrations** for `powitheta_sync_histories` (if not already applied).
-4. **Windows Task Scheduler** running **`php artisan schedule:run` every minute** so Laravel can fire **POWITHETA 06:05 / 12:05**, **staging-modules +5 min**, and **`history:generate-monthly`** on the **1st at 10:05** in **`APP_TIMEZONE`** (typically **`Asia/Makassar`**).
+4. **Windows Task Scheduler** running **`php artisan schedule:run` every minute** so Laravel can fire **POWITHETA 06:05 / 12:05**, **staging-modules +5 min**, and **`history:generate-monthly`** on the **last day of each month at 23:45** in **`APP_TIMEZONE`** (typically **`Asia/Makassar`**).
 
 Without step 4, the web app works, but **automatic** syncs never run.
 
@@ -118,7 +118,7 @@ Still in the project root:
 C:\xampp\php\php.exe artisan schedule:list
 ```
 
-You should see **POWITHETA** twice (**06:05**, **12:05**), **staging-modules** twice (**06:10**, **12:10**), and **`history:generate-monthly`** with **Next Due** on the next month’s **1st at 10:05**, with offset **`+08:00`** when using `Asia/Makassar`.
+You should see **POWITHETA** twice (**06:05**, **12:05**), **staging-modules** twice (**06:10**, **12:10**), and **`history:generate-monthly`** with cron **`45 23 * * *`** (**month-end only** via **`when`** in `Kernel`) and offset **`+08:00`** when using `Asia/Makassar`.
 
 Optional: run once (does nothing unless the current minute matches a scheduled time):
 
@@ -136,11 +136,11 @@ This is **one-time** per server (until the path or PHP binary changes).
 
 On many **Windows Server** builds, the Task Scheduler **Triggers** dialog only allows **Repeat task every** down to **5 minutes**, not 1 minute. Laravel’s docs recommend **`schedule:run` every minute** so jobs like `dailyAt('06:47')` are never missed.
 
-**If scheduled jobs fall on multiples of five minutes** (current app defaults: POWITHETA **06:05** / **12:05**, staging **06:10** / **12:10**, history **monthlyOn 10:05**): a GUI task repeating **every 5 minutes** starting on **`:00`** is usually enough (**7.4**).
+**If scheduled jobs fall on multiples of five minutes** (current app defaults: POWITHETA **06:05** / **12:05**, staging **06:10** / **12:10**, history **month-end 23:45**): a GUI task repeating **every 5 minutes** starting on **`:00`** is usually enough (**7.4**).
 
 **If you might use other minutes** (`06:03`, `09:47`, …) or insist on Laravel’s canonical **every minute**: use **`schtasks`** (**7.2**) or XML **PT1M** (**7.3**). Note: POWITHETA wall times are fixed in **`Kernel`**; **`sync_times`** in Admin does **not** change cron.
 
-**Acceptable GUI-only approach:** repeat every **5 minutes**, trigger start **e.g. `00:00:00` daily**, duration **Indefinitely** — runs at `:00`, `:05`, `:10`, … so **06:05**, **10:05**, **12:10**, etc. are hit. **Do not** start the repeat at e.g. `06:02`, or you can miss **:05** slots.
+**Acceptable GUI-only approach:** repeat every **5 minutes**, trigger start **e.g. `00:00:00` daily**, duration **Indefinitely** — runs at `:00`, `:05`, `:10`, … so **06:05**, **12:10**, **23:45**, etc. are hit. **Do not** start the repeat at e.g. `06:02`, or you can miss **:05** slots.
 
 ---
 

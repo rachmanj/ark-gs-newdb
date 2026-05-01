@@ -29,9 +29,9 @@
 
 ### [022] Kernel schedule slots + monthly history CLI + monthly budget sum (2026-04-30) ✅ COMPLETE
 
-**Challenge**: Align ops expectations (06:05/12:05 POWITHETA, staging +5 min, month-start history capture); fix **022C**-style Budget mismatch Daily vs Monthly; expose **Generate Monthly Histories** via CLI.
+**Challenge**: Align ops expectations (06:05/12:05 POWITHETA, staging +5 min, month-end history capture at 23:45); fix **022C**-style Budget mismatch Daily vs Monthly; expose **Generate Monthly Histories** via CLI.
 
-**Solution**: **`Kernel`**: `powitheta:refresh-from-sap --scheduled` at **06:05**/**12:05**, `staging-modules:sync-from-sap --scheduled` at **06:10**/**12:10** when flags allow; **`history:generate-monthly`** `monthlyOn(1,'10:05')`. Wall times fixed in **`Kernel`**; JSON toggles **`enabled`** / **`staging_modules_enabled`** / SAP date payload. **`MonthlyHistoryCaptureService`** shared by **`HistoryController::generate_monthly`** and Artisan. **`MonthlyHistoryController`**: **`sum('amount')`** on REG/CAPEX budget (not **`first()`**).
+**Solution**: **`Kernel`**: `powitheta:refresh-from-sap --scheduled` at **06:05**/**12:05**, `staging-modules:sync-from-sap --scheduled` at **06:10**/**12:10** when flags allow; **`history:generate-monthly`** at **23:45** on **`now()->day === daysInMonth`** (month-end). Wall times fixed in **`Kernel`**; JSON toggles **`enabled`** / **`staging_modules_enabled`** / SAP date payload. **`MonthlyHistoryCaptureService`** shared by **`HistoryController::generate_monthly`** and Artisan. **`MonthlyHistoryController`**: **`sum('amount')`** on REG/CAPEX budget (not **`first()`**).
 
 **Key Learning**: JSON **`sync_times`** no longer drives cron until UI is rewired—document in admin if operators rely on it. **`history:generate-monthly`** does not write **`budgets`**; Budget on monthly REGULER UI still reads **`budgets`**.
 

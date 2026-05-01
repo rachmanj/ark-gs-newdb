@@ -59,7 +59,7 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
--   `[done] P2: Laravel scheduler — fixed POWITHETA 06:05/12:05, staging-modules +5 min, monthly history 1st 10:05 [app/Console/Kernel.php; docs/planned-powitheta-scheduled-sync.md; MEMORY [022]] (completed: 2026-04-30)`
+-   `[done] P2: Laravel scheduler — fixed POWITHETA 06:05/12:05, staging-modules +5 min, monthly history month-end 23:45 [app/Console/Kernel.php; docs/planned-powitheta-scheduled-sync.md; MEMORY [022]] (completed: 2026-04-30)`
 -   `[done] P1: Monthly dashboard REG/CAPEX budget sum matches daily dashboard [MonthlyHistoryController sum vs first(); docs/decisions.md; MEMORY [022]] (completed: 2026-04-30)`
 -   `[done] P2: Artisan history:generate-monthly + MonthlyHistoryCaptureService shared with UI [GenerateMonthlyHistoriesCommand; HistoryController; MEMORY [022]] (completed: 2026-04-30)`
 -   `[done] P2: POWITHETA scheduled SAP sync + WITA timezone + ops docs [PowithetaRefreshFromSapCommand; Kernel; powitheta_schedule.json; APP_TIMEZONE Asia/Makassar; OS cron/Task Scheduler; docs/planned-powitheta-scheduled-sync.md] (completed: 2026-03-25)`

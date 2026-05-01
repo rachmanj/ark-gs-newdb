@@ -15,13 +15,13 @@
 3. **Schedule** (`app/Console/Kernel.php`, `config('app.timezone')` / **`APP_TIMEZONE`**):
     - **`powitheta:refresh-from-sap --scheduled`**: **06:05** and **12:05** daily, **`withoutOverlapping(20)`**, only when **`powitheta_schedule.json`** has **`enabled`** true.
     - **`staging-modules:sync-from-sap --scheduled`**: **06:10** and **12:10** daily (five minutes after each POWITHETA run), **`withoutOverlapping(25)`**, only when **`enabled`** and **`staging_modules_enabled`** are true.
-    - **`history:generate-monthly`**: **day 1 of each month at 10:05** (`monthlyOn`), **`withoutOverlapping(60)`**. Not gated on POWITHETA **`enabled`** (captures dashboards into **`histories`** for monthly reporting).
+    - **`history:generate-monthly`**: **23:45 on the last calendar day** of each month **`APP_TIMEZONE`** — implemented as **`dailyAt('23:45')`** plus **`when`** `now()->day === now()->daysInMonth`; **`withoutOverlapping(60)`**. Not gated on POWITHETA **`enabled`** (captures dashboards into **`histories`** for monthly reporting). `php artisan schedule:list` may still show cron **`45 23 * * *`** because Laravel lists the base expression; **`when`** filters actual runs.
 
    **Wall-clock POWITHETA + staging-module times are fixed in code** (`Kernel`). They are **not** read from **`PowithetaScheduleSettings::normalizedSyncTimes()`** at runtime. JSON **`sync_times`** remains in **`defaultConfig()`** and the superadmin form (**`06:05` / `12:05`**) for clarity and consistency; changing those fields alone does **not** reschedule Artisan until **`Kernel`** is updated.
 
 4. **Configuration**: `storage/app/powitheta_schedule.json` (gitignored; created by defaults or **Admin → POWITHETA sync schedule**): **`enabled`**, **`staging_modules_enabled`**, **`sync_times`** (defaults **`06:05`**, **`12:05`**), **`sap_date_mode`**, optional custom SAP date range for scheduled runs (`getScheduledSapDatePayload()` merged into scheduled `Request`).
 
-5. **Timezone**: `config('app.timezone')` from **`APP_TIMEZONE`** (default **`Asia/Makassar`** for WITA). `dailyAt()` / `monthlyOn()` use this timezone.
+5. **Timezone**: `config('app.timezone')` from **`APP_TIMEZONE`** (default **`Asia/Makassar`** for WITA). **`dailyAt`** / history **`when`** gate use this timezone.
 
 6. **UX**: Public **`GET /api/powitheta-sync-status`** + ticker partial; superadmin page lists **recent sync history**.
 
@@ -68,7 +68,7 @@ Separate scheduled commands (**staging-modules**, **`history:generate-monthly`**
 1. `.env`: `APP_TIMEZONE=Asia/Makassar` (or chosen zone), valid `APP_KEY`, DB, SAP credentials.
 2. `composer install`, `php artisan migrate --force`, `php artisan config:cache` as usual.
 3. **One-time**: configure cron or Task Scheduler so **`php artisan schedule:run`** runs **every minute** from the app root.
-4. Verify: `php artisan schedule:list` shows POWITHETA at **06:05** and **12:05**, staging-modules at **06:10** and **12:10**, **`history:generate-monthly`** with cron **`5 10 1 * *`**, all with **`+08:00`** when using Makassar.
+4. Verify: `php artisan schedule:list` shows POWITHETA at **06:05** and **12:05**, staging-modules at **06:10** and **12:10**, **`history:generate-monthly`** with cron **`45 23 * * *`** (effective **month-end 23:45** via **`when`**), all with **`+08:00`** when using Makassar.
 
 **Windows Server + XAMPP**: step-by-step guide — [deploy-production-windows-xampp.md](deploy-production-windows-xampp.md).
 
@@ -92,4 +92,4 @@ Separate scheduled commands (**staging-modules**, **`history:generate-monthly`**
 
 ---
 
-*Updated 2026-03-25: status set to implemented; operational and timezone guidance added. Updated 2026-04-30: fixed Kernel times, staging +5 min offset, monthly `history`, JSON vs Kernel note, verify expectations.*
+*Updated 2026-03-25: status set to implemented; operational and timezone guidance added. Updated 2026-04-30: fixed Kernel times, staging +5 min offset, monthly `history`, JSON vs Kernel note, verify expectations. Updated further: **`history:generate-monthly`** — **month-end 23:45** (`dailyAt` + **`when(day === daysInMonth)`).*

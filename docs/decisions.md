@@ -32,7 +32,7 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ### Decision: Fixed Laravel scheduler wall times — POWITHETA, staging-modules, monthly history - 2026-04-30
 
-**Context**: Operations asked for deterministic twice-daily SAP refresh at **06:05** / **12:05**, staging-modules **five minutes later**, and automated monthly **`histories`** capture on the **1st at 10:05**. Earlier, POWITHETA and staging shared the same **`sync_times`** slots from JSON, which drifted from this intent.
+**Context**: Operations asked for deterministic twice-daily SAP refresh at **06:05** / **12:05**, staging-modules **five minutes later**, and automated monthly **`histories`** capture (**revised 2026**: **month-end 23:45**). Earlier, POWITHETA and staging shared the same **`sync_times`** slots from JSON, which drifted from this intent.
 
 **Options Considered**:
 
@@ -50,7 +50,7 @@ Decision: [Title] - [YYYY-MM-DD]
 
 **Implementation**:
 
--   **`app/Console/Kernel.php`**: `history:generate-monthly` — `monthlyOn(1, '10:05')`; POWITHETA `dailyAt('06:05','12:05')`; staging `dailyAt('06:10','12:10')`; `Carbon` derives staging from +5 minutes if refactoring later
+-   **`app/Console/Kernel.php`**: `history:generate-monthly` — **`dailyAt('23:45')`** + **`when`** last day of month; POWITHETA `dailyAt('06:05','12:05')`; staging `dailyAt('06:10','12:10')`; `Carbon` derives staging from +5 minutes if refactoring later
 -   **`PowithetaScheduleSettings::defaultConfig()['sync_times']`**: **`['06:05', '12:05']`** for parity with messaging
 -   **Docs**: [architecture.md](architecture.md), [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md), `MEMORY.md`
 
