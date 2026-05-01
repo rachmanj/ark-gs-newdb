@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-04-30
 
 ## Memory Maintenance Guidelines
 
@@ -27,6 +27,16 @@
 
 ## Project Memory Entries
 
+### [022] Kernel schedule slots + monthly history CLI + monthly budget sum (2026-04-30) ✅ COMPLETE
+
+**Challenge**: Align ops expectations (06:05/12:05 POWITHETA, staging +5 min, month-start history capture); fix **022C**-style Budget mismatch Daily vs Monthly; expose **Generate Monthly Histories** via CLI.
+
+**Solution**: **`Kernel`**: `powitheta:refresh-from-sap --scheduled` at **06:05**/**12:05**, `staging-modules:sync-from-sap --scheduled` at **06:10**/**12:10** when flags allow; **`history:generate-monthly`** `monthlyOn(1,'10:05')`. Wall times fixed in **`Kernel`**; JSON toggles **`enabled`** / **`staging_modules_enabled`** / SAP date payload. **`MonthlyHistoryCaptureService`** shared by **`HistoryController::generate_monthly`** and Artisan. **`MonthlyHistoryController`**: **`sum('amount')`** on REG/CAPEX budget (not **`first()`**).
+
+**Key Learning**: JSON **`sync_times`** no longer drives cron until UI is rewired—document in admin if operators rely on it. **`history:generate-monthly`** does not write **`budgets`**; Budget on monthly REGULER UI still reads **`budgets`**.
+
+---
+
 ### [021] GRPO / MIGI / Incoming scheduled SAP sync with dedupe (2026-03-25) ✅ COMPLETE
 
 **Challenge**: Run automatic SAP sync for GRPO, MIGI, Incoming on same schedule as POWITHETA without truncating; avoid duplicate rows on repeat runs.
@@ -37,13 +47,13 @@
 
 ---
 
-### [020] App timezone WITA + POWITHETA sync 06:00 / 18:00 (2026-03-25) ✅ COMPLETE
+### [020] App timezone WITA + POWITHETA scheduled sync (2026-03-25) ✅ COMPLETE — superseded timings [022]
 
-**Challenge**: Scheduled POWITHETA runs must align with 06:00 and 18:00 WITA, not UTC.
+**Challenge**: Scheduled POWITHETA runs must align with business wall-clock in WITA, not UTC.
 
-**Solution**: `config/app.php` uses `env('APP_TIMEZONE', 'Asia/Makassar')` (WITA). `.env` sets `APP_TIMEZONE=Asia/Makassar`. `storage/app/powitheta_schedule.json` uses `06:00` and `18:00`. `php artisan schedule:list` shows next due with `+08:00`.
+**Solution**: `config/app.php` uses `env('APP_TIMEZONE', 'Asia/Makassar')` (WITA). `.env` sets `APP_TIMEZONE=Asia/Makassar`. OS runs `php artisan schedule:run` every minute. **`[022]`**: POWITHETA slots are **06:05**/**12:05** WITA (fixed in `Kernel`).
 
-**Key Learning**: `dailyAt()` is interpreted in `config('app.timezone')`; without setting WITA, times were effectively UTC. OS should still run `schedule:run` every minute (or two cron lines at 06:00 and 18:00 local if only this job). Documented in `docs/architecture.md`, `docs/decisions.md`, `docs/planned-powitheta-scheduled-sync.md`.
+**Key Learning**: `dailyAt()` uses `config('app.timezone')`. JSON **`enabled`**/`staging`/SAP-range settings still apply; POWITHETA **clock** is **`Kernel`** as of **2026-04-30** — see `docs/planned-powitheta-scheduled-sync.md`.
 
 ---
 

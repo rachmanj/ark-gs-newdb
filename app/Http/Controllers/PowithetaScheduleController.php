@@ -40,8 +40,8 @@ class PowithetaScheduleController extends Controller
         return view('admin.powitheta-schedule', [
             'enabled' => $config['enabled'] ?? true,
             'staging_modules_enabled' => $config['staging_modules_enabled'] ?? true,
-            'sync_time_1' => $times[0] ?? '06:00',
-            'sync_time_2' => $times[1] ?? '18:00',
+            'sync_time_1' => $times[0] ?? '06:05',
+            'sync_time_2' => $times[1] ?? '12:05',
             'sap_date_mode' => $config['sap_date_mode'] ?? 'current_year',
             'sap_custom_start' => $config['sap_custom_start'] ?? '',
             'sap_custom_end' => $config['sap_custom_end'] ?? '',

@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-04-30
 
 # Technical Decision Records
 
@@ -30,9 +30,47 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Fixed Laravel scheduler wall times — POWITHETA, staging-modules, monthly history - 2026-04-30
+
+**Context**: Operations asked for deterministic twice-daily SAP refresh at **06:05** / **12:05**, staging-modules **five minutes later**, and automated monthly **`histories`** capture on the **1st at 10:05**. Earlier, POWITHETA and staging shared the same **`sync_times`** slots from JSON, which drifted from this intent.
+
+**Options Considered**:
+
+1. **Keep JSON `sync_times` as the sole driver for both POWITHETA and staging** (`Kernel` loop only):
+    - ✅ Pros: Superadmin adjusts schedule without deploy
+    - ❌ Cons: Cannot express “staging always +5 min after POWITHETA” cleanly; mismatches requested fixed slots
+
+2. **Hardcode POWITHETA + staging-at-+5 min + `history:generate-monthly` in `Kernel`, keep JSON for toggles / SAP date payloads**:
+    - ✅ Pros: Matches business hours exactly; deterministic `schedule:list`; staging-order guarantee
+    - ❌ Cons: Changing wall times requires a code deploy; Admin “sync times” fields are informational defaults only until UI is rewired or docs updated
+
+**Decision**: Implement **Option 2**.
+
+**Rationale**: Reduces ambiguity and race risk between POWITHETA and staging-modules. **`enabled`** / **`staging_modules_enabled`** remain runtime-configurable via JSON; WAL times are maintained in **`app/Console/Kernel.php`**.
+
+**Implementation**:
+
+-   **`app/Console/Kernel.php`**: `history:generate-monthly` — `monthlyOn(1, '10:05')`; POWITHETA `dailyAt('06:05','12:05')`; staging `dailyAt('06:10','12:10')`; `Carbon` derives staging from +5 minutes if refactoring later
+-   **`PowithetaScheduleSettings::defaultConfig()['sync_times']`**: **`['06:05', '12:05']`** for parity with messaging
+-   **Docs**: [architecture.md](architecture.md), [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md), `MEMORY.md`
+
+**Review Date**: 2027-04-30 (revisit if superadmin-driven schedule edits are required again)
+
+---
+
+### Decision: Monthly dashboard budget parity with daily dashboard - 2026-04-30
+
+**Context**: **022C REG** (and similar) showed **different Budget (IDR 000)** on **Daily** vs **Monthly** dashboards for the same calendar month because daily used **`sum('amount')`** on **`budgets`** while **`MonthlyHistoryController`** used **`first()`**, omitting sibling rows.
+
+**Decision**: **`MonthlyHistoryController::reguler_history_monthly`** and **`capex_history_monthly`** use **`sum('amount')`** per project/month and budget type (**2** = REGULER, **8** = CAPEX), aligning with **`CapexController::reguler_daily` / `capex_daily`**.
+
+**Review Date**: 2027-04-30 (revisit when budget granularity or grain changes)
+
+---
+
 ### Decision: POWITHETA scheduled SAP sync — WITA timezone + OS scheduler requirement - 2026-03-25
 
-**Context**: Automated twice-daily POWITHETA refresh must run at **06:00** and **18:00** in Indonesia Central Time (WITA), not UTC. Laravel’s `dailyAt()` times are interpreted in `config('app.timezone')`. Production also requires a process outside PHP to invoke the Laravel scheduler.
+**Context**: Automated twice-daily POWITHETA refresh must run at wall-clock times in Indonesia Central Time (WITA), not UTC. Laravel’s `dailyAt()` times are interpreted in `config('app.timezone')`. Production requires a process outside PHP to invoke the Laravel scheduler. **2026-04-30**: run times switched to fixed **06:05** / **12:05** in `Kernel`; see sibling decision “Fixed Laravel scheduler wall times…”
 
 **Options Considered**:
 
@@ -56,7 +94,7 @@ Decision: [Title] - [YYYY-MM-DD]
 
 -   `config/app.php`: `'timezone' => env('APP_TIMEZONE', 'Asia/Makassar')`
 -   `.env`: `APP_TIMEZONE=Asia/Makassar` (production parity)
--   `storage/app/powitheta_schedule.json`: `sync_times` **06:00**, **18:00** (editable via Admin UI)
+-   **`app/Console/Kernel.php`**: POWITHETA + staging **`dailyAt`** times are **fixed in code** (**2026-04-30**: 06:05 / 12:05 and staging +5 min — see newer decision record). **`storage/app/powitheta_schedule.json`**: **`enabled`**, **`staging_modules_enabled`**, **`sap_date_mode`**, custom SAP ranges; **`sync_times`** defaults **06:05** / **12:05** (Admin UI fields; wall clock for POWITHETA is **Kernel**, not JSON)
 -   Ops: crontab line `* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1` or Windows equivalent
 
 **Review Date**: 2027-03-25 (revisit if multi-region or split timezone per module)

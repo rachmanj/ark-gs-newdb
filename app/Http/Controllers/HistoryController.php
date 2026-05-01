@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\History;
-use Carbon\Carbon;
+use App\Services\MonthlyHistoryCaptureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -87,79 +87,13 @@ class HistoryController extends Controller
             ->toJson();
     }
 
-    public function generate_monthly(Request $request)
+    public function generate_monthly(Request $request, MonthlyHistoryCaptureService $monthlyHistoryCapture)
     {
         $request->validate([
             'capture_date' => 'required',
         ]);
 
-        $general_data = app(DashboardDailyController::class)->getDailyData();
-
-        $capex_data = $general_data['capex_daily']['capex'];
-
-        // YYYYMMDD
-        $batch_no = Carbon::parse($request->capture_date)->format('Ymd');
-
-        foreach ($capex_data as $capex) {
-            History::create([
-                'date' => $request->capture_date,
-                'periode' => 'monthly',
-                'gs_type' => 'capex',
-                'project_code' => $capex['project'],
-                'amount' => $capex['sent_amount'],
-                'remarks' => 'BATCH ' . $batch_no
-            ]);
-        }
-
-        $reguler_data = $general_data['reguler_daily']['reguler'];
-
-        foreach ($reguler_data as $reguler) {
-            History::create([
-                'date' => $request->capture_date,
-                'periode' => 'monthly',
-                'gs_type' => 'po_sent',
-                'project_code' => $reguler['project'],
-                'amount' => $reguler['sent_amount'],
-                'remarks' => 'BATCH ' . $batch_no
-            ]);
-        }
-
-        $grpo_data = $general_data['grpo_daily']['grpo_daily'];
-
-        foreach ($grpo_data as $grpo) {
-            History::create([
-                'date' => $request->capture_date,
-                'periode' => 'monthly',
-                'gs_type' => 'grpo_amount',
-                'project_code' => $grpo['project'],
-                'amount' => $grpo['grpo_amount'],
-                'remarks' => 'BATCH ' . $batch_no
-            ]);
-        }
-
-        $npi_data = $general_data['npi_daily']['npi'];
-
-        foreach ($npi_data as $incoming) {
-            History::create([
-                'date' => $request->capture_date,
-                'periode' => 'monthly',
-                'gs_type' => 'incoming_qty',
-                'project_code' => $incoming['project'],
-                'amount' => $incoming['incoming_qty'],
-                'remarks' => 'BATCH ' . $batch_no
-            ]);
-        }
-
-        foreach ($npi_data as $outgoing) {
-            History::create([
-                'date' => $request->capture_date,
-                'periode' => 'monthly',
-                'gs_type' => 'outgoing_qty',
-                'project_code' => $outgoing['project'],
-                'amount' => $outgoing['outgoing_qty'],
-                'remarks' => 'BATCH ' . $batch_no
-            ]);
-        }
+        $monthlyHistoryCapture->captureFromDailyDashboard($request->capture_date);
 
         return redirect()->route('history.index')->with('success', 'History generate successfully.');
     }

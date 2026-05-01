@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-04-30
 
 ## Task Management Guidelines
 
@@ -59,6 +59,9 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P2: Laravel scheduler — fixed POWITHETA 06:05/12:05, staging-modules +5 min, monthly history 1st 10:05 [app/Console/Kernel.php; docs/planned-powitheta-scheduled-sync.md; MEMORY [022]] (completed: 2026-04-30)`
+-   `[done] P1: Monthly dashboard REG/CAPEX budget sum matches daily dashboard [MonthlyHistoryController sum vs first(); docs/decisions.md; MEMORY [022]] (completed: 2026-04-30)`
+-   `[done] P2: Artisan history:generate-monthly + MonthlyHistoryCaptureService shared with UI [GenerateMonthlyHistoriesCommand; HistoryController; MEMORY [022]] (completed: 2026-04-30)`
 -   `[done] P2: POWITHETA scheduled SAP sync + WITA timezone + ops docs [PowithetaRefreshFromSapCommand; Kernel; powitheta_schedule.json; APP_TIMEZONE Asia/Makassar; OS cron/Task Scheduler; docs/planned-powitheta-scheduled-sync.md] (completed: 2026-03-25)`
 -   `[done] P2: POWITHETA PO upsert — new PO full create, existing PO header only [docs/planned-powitheta-po-upsert.md; performConvertToPo; migration unique doc_num] (completed: 2026-03-25)`
 -   `[done] P1: Add PO Exclusions feature for excluding POs from filters [PoExclusion model, PoExclusionService, PoExclusionController; applied to CapexController, YearlyIndexController, DashboardOtherController, POController, PowithetaExport; Admin menu link; bulk add with comma/newline] (completed: 2026-02-25)`

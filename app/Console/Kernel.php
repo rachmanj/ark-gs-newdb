@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Services\PowithetaScheduleSettings;
+use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -16,19 +17,26 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('history:generate-monthly')
+            ->monthlyOn(1, '10:05')
+            ->withoutOverlapping(60);
+
         $config = PowithetaScheduleSettings::get();
         if (! ($config['enabled'] ?? true)) {
             return;
         }
 
-        foreach (PowithetaScheduleSettings::normalizedSyncTimes() as $time) {
+        foreach (['06:05', '12:05'] as $time) {
             $schedule->command('powitheta:refresh-from-sap --scheduled')
                 ->dailyAt($time)
                 ->withoutOverlapping(20);
 
             if ($config['staging_modules_enabled'] ?? true) {
+                $stagingAt = Carbon::createFromFormat('H:i', $time)
+                    ->addMinutes(5)
+                    ->format('H:i');
                 $schedule->command('staging-modules:sync-from-sap --scheduled')
-                    ->dailyAt($time)
+                    ->dailyAt($stagingAt)
                     ->withoutOverlapping(25);
             }
         }

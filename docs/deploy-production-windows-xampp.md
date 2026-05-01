@@ -11,7 +11,7 @@ Adjust drive letters and folder names to match your server.
 1. **Application code** from `git pull` (scheduler, command, admin UI, migrations).
 2. **`.env`** with `APP_TIMEZONE` and correct DB/SAP settings.
 3. **Database migrations** for `powitheta_sync_histories` (if not already applied).
-4. **Windows Task Scheduler** running **`php artisan schedule:run` every minute** so Laravel can fire **06:00** and **18:00 WITA** (with `APP_TIMEZONE=Asia/Makassar`).
+4. **Windows Task Scheduler** running **`php artisan schedule:run` every minute** so Laravel can fire **POWITHETA 06:05 / 12:05**, **staging-modules +5 min**, and **`history:generate-monthly`** on the **1st at 10:05** in **`APP_TIMEZONE`** (typically **`Asia/Makassar`**).
 
 Without step 4, the web app works, but **automatic** syncs never run.
 
@@ -69,7 +69,7 @@ If `composer` is not in PATH, use the full path to `composer.phar` or install Co
    | `APP_DEBUG` | `false` |
    | `APP_KEY` | Must match existing production key (do not regenerate if app already deployed). |
    | `APP_URL` | Public URL of the site, e.g. `https://erp.example.com` |
-   | `APP_TIMEZONE` | `Asia/Makassar` for **WITA** (06:00 / 18:00 wall-clock for scheduled sync). |
+   | `APP_TIMEZONE` | `Asia/Makassar` for **WITA** (`dailyAt` / scheduled jobs use this zone). |
    | `DB_*` | Production MySQL host, database, user, password. |
    | SAP SQL variables | `SAP_SQL_HOST`, `SAP_SQL_PORT`, etc., as today. |
 
@@ -118,7 +118,7 @@ Still in the project root:
 C:\xampp\php\php.exe artisan schedule:list
 ```
 
-You should see **`powitheta:refresh-from-sap --scheduled`** twice, with **Next Due** at **06:00** and **18:00** and offset **`+08:00`** when using `Asia/Makassar`.
+You should see **POWITHETA** twice (**06:05**, **12:05**), **staging-modules** twice (**06:10**, **12:10**), and **`history:generate-monthly`** with **Next Due** on the next month’s **1st at 10:05**, with offset **`+08:00`** when using `Asia/Makassar`.
 
 Optional: run once (does nothing unless the current minute matches a scheduled time):
 
@@ -136,11 +136,11 @@ This is **one-time** per server (until the path or PHP binary changes).
 
 On many **Windows Server** builds, the Task Scheduler **Triggers** dialog only allows **Repeat task every** down to **5 minutes**, not 1 minute. Laravel’s docs recommend **`schedule:run` every minute** so jobs like `dailyAt('06:47')` are never missed.
 
-**If you only use `:00` times (e.g. 06:00 and 18:00 WITA forever):** you **do not need** `schtasks` or a 1-minute repeat. The GUI’s **every 5 minutes** is enough **if** the trigger is aligned so runs include **:00** each hour (see **7.4**). No need for section **7.2** in that case.
+**If scheduled jobs fall on multiples of five minutes** (current app defaults: POWITHETA **06:05** / **12:05**, staging **06:10** / **12:10**, history **monthlyOn 10:05**): a GUI task repeating **every 5 minutes** starting on **`:00`** is usually enough (**7.4**).
 
-**If you might use non–5-minute-aligned times** in **Admin → POWITHETA sync schedule** (e.g. `06:03`, `09:47`): use **`schtasks`** (section **7.2**) or repeat every **1 minute**, or those minutes can be skipped when the task only runs every 5 minutes on a bad offset.
+**If you might use other minutes** (`06:03`, `09:47`, …) or insist on Laravel’s canonical **every minute**: use **`schtasks`** (**7.2**) or XML **PT1M** (**7.3**). Note: POWITHETA wall times are fixed in **`Kernel`**; **`sync_times`** in Admin does **not** change cron.
 
-**Acceptable GUI-only approach:** repeat every **5 minutes**, trigger start **e.g. `00:00:00` daily**, duration **Indefinitely** — runs at `:00`, `:05`, `:10`, … so **06:00** and **18:00** are hit. **Do not** start the repeat at e.g. `06:02`, or you can miss **:00**.
+**Acceptable GUI-only approach:** repeat every **5 minutes**, trigger start **e.g. `00:00:00` daily**, duration **Indefinitely** — runs at `:00`, `:05`, `:10`, … so **06:05**, **10:05**, **12:10**, etc. are hit. **Do not** start the repeat at e.g. `06:02`, or you can miss **:05** slots.
 
 ---
 
@@ -241,10 +241,47 @@ Each release:
 | Symptom | Check |
 |--------|--------|
 | Scheduled sync never runs | Task Scheduler **Last Run Result** (0x0 = success); **History** enabled; correct **Start in** folder; PHP path. |
+| **Event 203 / 101 — “Action failed to start” / “Launch Failure”** (e.g. **Error Value: 2147942667** ≈ `0x8007010B`, often *“The directory name is invalid”*) | See **below** — fix **Start in**, **php.exe** path, and account. |
 | GUI only allows repeat every 5 minutes | Use **`schtasks /SC MINUTE /MO 1`** with a `.bat` wrapper (section 7.2). |
 | Wrong time (not WITA) | `APP_TIMEZONE` in `.env`; then `php artisan config:clear` and `config:cache`. |
 | Permission errors in logs | User running the task has write access to `storage\` and `bootstrap\cache\`. |
 | SAP / DB errors | Same as manual “Sync from SAP”; verify `SAP_SQL_*` and firewall from app server to SQL Server. |
+
+### Task Scheduler Event 203 — `php.exe` launch failure (2147942667)
+
+This usually means Task Scheduler cannot **start** the action (before Laravel runs). Common causes:
+
+1. **“Start in” (Start in / optional working directory) is wrong or empty**  
+   It must be the **folder that contains `artisan`** (your app root), e.g. `D:\project\ark-gs`.  
+   If it points to a **non-existent** path, a **mapped drive** that is not available at logon, or a typo, Windows often reports **Launch Failure** / invalid directory.
+
+2. **`C:\xampp\php\php.exe` does not exist on this server**  
+   Production may use another drive, another XAMPP install, or only `php.exe` elsewhere. In **cmd** (as the task user):  
+   `dir C:\xampp\php\php.exe`  
+   If missing, set **Program/script** to the **real** PHP path (e.g. `C:\xampp\php\php.exe` on the machine where the app lives).
+
+3. **Arguments** (`artisan schedule:run`) must be in **Add arguments**, not merged into the path incorrectly.
+
+4. **Run as user** (`Run whether user is logged on or not`) must have **read/execute** on `php.exe` and **read** access to the **Start in** folder. If the task runs as a service account, confirm that account can access `C:\xampp` and the project path (no folder-only permissions blocking).
+
+5. **Quick test** (same user as the task):  
+   `cd /d D:\your\path\to\ark-gs`  
+   `C:\xampp\php\php.exe artisan schedule:run`  
+   If this fails in cmd, fix paths before Task Scheduler.
+
+---
+
+### Optional: use a `.bat` wrapper (avoids “Start in” mistakes)
+
+If the task still fails, run a **single `.bat`** as the **Program** and put everything inside:
+
+```bat
+@echo off
+cd /d D:\project\ark-gs
+C:\xampp\php\php.exe artisan schedule:run
+```
+
+Set **Start in** to the folder where the `.bat` lives **or** the folder containing `artisan` (same as above). Point the task’s **Program** to the full path of the `.bat`.
 
 ---
 
@@ -256,4 +293,4 @@ Each release:
 
 ---
 
-*Last updated: 2026-03-25 (Task Scheduler GUI 5-minute minimum: see sections 7.1–7.2)*
+*Last updated: 2026-04-30 (schedule times aligned with `Kernel`; Task Scheduler GUI 5-minute minimum: see sections 7.1–7.2)*

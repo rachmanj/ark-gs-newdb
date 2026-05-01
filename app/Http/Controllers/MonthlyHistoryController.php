@@ -29,15 +29,9 @@ class MonthlyHistoryController extends Controller
         $year = substr($date, 0, 4);
 
         foreach ($this->include_projects as $project) {
-            $budget =  $this->plant_budget_history_monthly($date, $project)
+            $budget = (float) $this->plant_budget_history_monthly($date, $project)
                 ->where('budget_type_id', 2)
-                ->first();
-
-            if ($budget) {
-                $budget = $budget->amount;
-            } else {
-                $budget = 0;
-            }
+                ->sum('amount');
 
             $po_sent_amount = History::select('amount', 'project_code')
                 ->where('periode', 'monthly')
@@ -94,15 +88,9 @@ class MonthlyHistoryController extends Controller
         $year = substr($date, 0, 4);
 
         foreach ($this->include_projects as $project) {
-            $budget =  $this->plant_budget_history_monthly($date, $project)
+            $budget = (float) $this->plant_budget_history_monthly($date, $project)
                 ->where('budget_type_id', 8)
-                ->first();
-
-            if ($budget) {
-                $budget = $budget->amount;
-            } else {
-                $budget = 0;
-            }
+                ->sum('amount');
 
             $po_sent_amount = History::select('amount', 'project_code')
                 ->where('periode', 'monthly')

@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2026-03-25
+Last Updated: 2026-04-30
 
 ## Architecture Documentation Guidelines
 
@@ -128,7 +128,8 @@ This document describes the CURRENT WORKING STATE of the application architectur
 
 -   **Budget Types**: Configurable budget categories
 -   **Budget Tracking**: CAPEX vs Regular budget monitoring
--   **History Management**: Budget change tracking and auditing
+-   **History Management**: Manual and batch-captured **monthly** snapshots in **`histories`** (`periode`, `gs_type`, `project_code`, `amount`, `remarks` including `BATCH yyyymmdd`). **UI**: History page modal posts to `HistoryController::generate_monthly`. **CLI**: `php artisan history:generate-monthly` (optional `Y-m-d` capture date; default today) delegates to **`App\Services\MonthlyHistoryCaptureService`**, which reads the same aggregates as **`DashboardDailyController::getDailyData()`** and creates rows for capex, `po_sent`, `grpo_amount`, `incoming_qty`, and `outgoing_qty`. Scheduled: **1st of each month at 10:05** via `app/Console/Kernel.php` (`withoutOverlapping(60)`).
+-   **Monthly vs daily REGULER/CAPEX budget**: The **daily** dashboard (`CapexController::reguler_daily` / `capex_daily`) sums **`budgets.amount`** per project and month (`budget_type_id` 2 for REG, 8 for CAPEX). The **monthly** dashboard (`MonthlyHistoryController::reguler_history_monthly` / `capex_history_monthly`) uses the same tables and **`sum('amount')`** per project/month so totals match daily when the selected month equals the calendar month used on the daily screen. (Earlier `first()` on budget could undercount when multiple budget lines existed.)
 
 ## Database Schema
 
@@ -190,7 +191,7 @@ All routes follow RESTful conventions with resource controllers:
 /roles/* → Role management
 /permissions/* → Permission management
 /po-exclusions/* → PO exclusion list (admin only; excludes POs from filters)
-/admin/powitheta-schedule → Superadmin: enable sync, two daily times, scheduled SAP date mode, sync history table
+/admin/powitheta-schedule → Superadmin: enable sync, SAP date mode, staging modules flag, sync history (note: POWITHETA run times are fixed in Console `Kernel`; form defaults for times remain for reference / future use)
 /api/powitheta-sync-status → JSON: scheduled sync in progress (public; used by ticker)
 ```
 
@@ -199,7 +200,14 @@ All routes follow RESTful conventions with resource controllers:
 1. **Import**: Excel files → Validation → Database storage
 2. **Export**: Database queries → Excel/PDF generation → Download
 3. **Conversion**: POWITHETA data → Purchase Orders → Supplier relationships
-4. **Scheduled SAP refresh** (automated): OS invokes `php artisan schedule:run` every minute; Laravel runs `powitheta:refresh-from-sap --scheduled` at configured times (default **06:00** and **18:00** in `config('app.timezone')`, production uses **`Asia/Makassar`** for WITA). Staging-only truncate of `powithetas`, then same `sync_from_sap` + upsert `performConvertToPo()` path as the UI. Times and SAP date mode are stored in `storage/app/powitheta_schedule.json` (superadmin: **Admin → POWITHETA sync schedule**). In-progress state is exposed via cache and **`GET /api/powitheta-sync-status`** for the global ticker partial.
+4. **Scheduled jobs** (automated): OS invokes **`php artisan schedule:run` every minute** (same timezone rules as below). Laravel **`app/Console/Kernel.php`** registers:
+    - **`history:generate-monthly`**: cron **`5 10 1 * *`** — first day of each month at **10:05** (`withoutOverlapping(60)`).
+    - **`powitheta:refresh-from-sap --scheduled`**: daily at **06:05** and **12:05** (`withoutOverlapping(20)`), only if **`powitheta_schedule.json`** has **`enabled`** true.
+    - **`staging-modules:sync-from-sap --scheduled`**: daily at **06:10** and **12:10** (five minutes after each POWITHETA slot; `withoutOverlapping(25)`), only if **`enabled`** and **`staging_modules_enabled`** are true.
+
+    POWITHETA wall-clock times are **fixed in `Kernel`** (not driven by **`sync_times`** in JSON). JSON still controls **`enabled`**, **`staging_modules_enabled`**, **`sap_date_mode`**, custom SAP ranges (`PowithetaScheduleSettings::getScheduledSapDatePayload()`), and the superadmin UI defaults for **`sync_times`** (`06:05` / `12:05` defaults in code for display consistency).
+
+    POWITHETA path: staging-only truncate of `powithetas`, then same `sync_from_sap` + upsert `performConvertToPo()` as the UI. Staging-modules path: GRPO/MIGI/Incoming SAP sync with dedupe. In-progress POWITHETA state: cache + **`GET /api/powitheta-sync-status`** ticker.
 5. **Dashboard**: Real-time aggregation → Chart.js/ApexCharts visualizations
 6. **Yearly Dashboard**: Data aggregation → JSON encoding → ApexCharts rendering → Interactive charts
 7. **PO Details Drill-Down**:
@@ -287,7 +295,7 @@ flowchart LR
     end
     subgraph laravel [Laravel]
         sr["php artisan schedule:run"]
-        k["Console Kernel\ndailyAt times from JSON"]
+        k["Console Kernel\nfixed dailyAt +\nmonthly history"]
         cmd["powitheta:refresh-from-sap\n--scheduled"]
     end
     subgraph work [Job]
@@ -299,7 +307,7 @@ flowchart LR
     cmd --> t --> sap --> h
 ```
 
-**Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). See [decisions.md](decisions.md) (POWITHETA timezone + scheduler) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
+**Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). After deploy, run **`php artisan schedule:list`** and confirm POWITHETA (06:05 / 12:05), staging-modules (06:10 / 12:10), and **`history:generate-monthly`** (day 1, 10:05). See [decisions.md](decisions.md) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
 
 ## Security Implementation
 
@@ -340,4 +348,4 @@ flowchart LR
 -   **File Storage**: Local storage for Excel imports/exports
 -   **Caching**: Laravel's file/database caching for dashboard data
 -   **Logging**: Laravel's logging system for error tracking
--   **Laravel scheduler**: After `git pull` / deploy, ensure **`APP_TIMEZONE`** in `.env` matches business intent (e.g. `Asia/Makassar` for WITA). Configure **cron** (Linux) or **Windows Task Scheduler** to run `php artisan schedule:run` **every minute** from the application root, as the same user that owns the project files. Verify with `php artisan schedule:list`. Without this, scheduled POWITHETA SAP syncs never run automatically. **Windows Server + XAMPP**: [deploy-production-windows-xampp.md](deploy-production-windows-xampp.md).
+-   **Laravel scheduler**: After `git pull` / deploy, ensure **`APP_TIMEZONE`** in `.env` matches business intent (e.g. `Asia/Makassar` for WITA). Configure **cron** (Linux) or **Windows Task Scheduler** to run `php artisan schedule:run` **every minute** from the application root, as the same user that owns the project files. Verify with `php artisan schedule:list` (expect POWITHETA, staging-modules, and monthly **`history`** entries). Without this, scheduled SAP sync and monthly history capture do not run automatically. **Windows Server + XAMPP**: [deploy-production-windows-xampp.md](deploy-production-windows-xampp.md).

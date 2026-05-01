@@ -12,7 +12,7 @@ class PowithetaScheduleSettings
     {
         return [
             'enabled' => true,
-            'sync_times' => ['06:00', '18:00'],
+            'sync_times' => ['06:05', '12:05'],
             'sap_date_mode' => 'current_year',
             'sap_custom_start' => null,
             'sap_custom_end' => null,
