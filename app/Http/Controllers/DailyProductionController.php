@@ -13,6 +13,31 @@ use Carbon\Carbon;
 
 class DailyProductionController extends Controller
 {
+    /**
+     * Projects that are CLOSED (no longer producing) and must be hidden from
+     * the daily production overview starting from the given period (year, month),
+     * inclusive. Months BEFORE the closure period still show the project.
+     */
+    const CLOSED_PROJECTS = [
+        '017C' => ['year' => 2026, 'month' => 9], // closed Sep 2026
+    ];
+
+    /**
+     * Check whether a project should be hidden from the overview for the given period.
+     */
+    private function isHiddenFromOverview($project, $year, $month)
+    {
+        if (!isset(self::CLOSED_PROJECTS[$project])) {
+            return false;
+        }
+        $closed = self::CLOSED_PROJECTS[$project];
+        $year = (int) $year;
+        $month = (int) $month;
+
+        return $year > $closed['year']
+            || ($year == $closed['year'] && $month >= $closed['month']);
+    }
+
     public function index()
     {
         $is_data = DailyProduction::count() > 0 ? 1 : 0;
@@ -70,8 +95,12 @@ class DailyProductionController extends Controller
             ->where('month', $month)
             ->get();
 
-        // Get unique projects from the data
-        $projects = $monthlyProduction->pluck('project')->unique();
+        // Get unique projects from the data (hide closed projects from the
+        // overview from their closure month onward, e.g. 017C since Sep 2026)
+        $projects = $monthlyProduction->pluck('project')->unique()
+            ->reject(function ($project) use ($year, $month) {
+                return $this->isHiddenFromOverview($project, $year, $month);
+            });
 
         // Format data for chart
         $chartData = [];
