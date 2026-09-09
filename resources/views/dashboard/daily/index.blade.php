@@ -306,12 +306,14 @@
             <!-- Daily Production Data Section -->
             @include('dashboard.daily.production')
 
-            <!-- CAPEX Data -->
+            <!-- CAPEX Data (hidden while no CPX PO / capex budget exists) -->
+            @if($show_capex ?? false)
             <div class="row">
                 <div class="col-12 mb-4">
                     @include('dashboard.daily.capex')
                 </div>
             </div>
+            @endif
         </div>
     </div>
 @endsection

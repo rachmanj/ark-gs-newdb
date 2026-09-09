@@ -14,6 +14,13 @@ class DashboardDailyController extends Controller
 {
     public function index()
     {
+        // CAPEX card is hidden while there is no CAPEX data at all (no CPX
+        // purchase orders from SAP since Oct 2024, no capex budget since Jun 2024).
+        // It reappears automatically as soon as CPX PO lines or a capex budget
+        // for the current year exist.
+        $showCapex = DB::table('powithetas')->where('budget_type', 'CPX')->exists()
+            || Budget::where('budget_type_id', 8)->whereYear('date', now()->year)->exists();
+
         $capex_daily = app(CapexController::class)->capex_daily();
         $reguler_daily = app(CapexController::class)->reguler_daily();
         $grpo_daily = app(GrpoIndexController::class)->index();
@@ -25,6 +32,7 @@ class DashboardDailyController extends Controller
 
         return view('dashboard.daily.index', [
             'report_date' => Carbon::now()->subDay()->format('d-M-Y'),
+            'show_capex' => $showCapex,
             'capex_daily' => $capex_daily,
             'reguler_daily' => $reguler_daily,
             'grpo_daily' => $grpo_daily,
