@@ -31,7 +31,7 @@ class DashboardDailyController extends Controller
         $dailyProduction = $dailyProductionController->dashboardData(new Request());
 
         return view('dashboard.daily.index', [
-            'report_date' => Carbon::now()->subDay()->format('d-M-Y'),
+            'report_date' => Carbon::now()->format('d-M-Y'),
             'show_capex' => $showCapex,
             'capex_daily' => $capex_daily,
             'reguler_daily' => $reguler_daily,

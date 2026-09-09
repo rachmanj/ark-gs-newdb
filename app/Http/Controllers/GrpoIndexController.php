@@ -57,7 +57,7 @@ class GrpoIndexController extends Controller
 
     private function buildGrpoQuery()
     {
-        $date = Carbon::now()->subDay();
+        $date = Carbon::now();
         $incl_deptcode = ['40', '50', '60', '140', '200'];
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
 

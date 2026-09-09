@@ -20,7 +20,7 @@ class CapexController extends Controller
 
     public function capex_daily()
     {
-        $date = Carbon::now()->subDay();
+        $date = Carbon::now();
 
         foreach ($this->include_projects as $project) {
             $budget = $this->plant_budget()->where('project_code', $project)
@@ -128,7 +128,7 @@ class CapexController extends Controller
 
     public function plant_budget()
     {
-        $date = Carbon::now()->subDay();
+        $date = Carbon::now();
         return Budget::select('project_code', 'amount', 'budget_type_id')
             ->whereYear('date', $date)
             ->whereMonth('date', $date);
@@ -136,7 +136,7 @@ class CapexController extends Controller
 
     public function po_sent_amount()
     {
-        $date = Carbon::now()->subDay();
+        $date = Carbon::now();
         $incl_deptcode = ['40', '50', '60', '140', '200'];
 
         $excl_itemcode = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
