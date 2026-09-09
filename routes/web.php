@@ -30,21 +30,43 @@ use Illuminate\Support\Facades\Route;
 Route::get('/api/powitheta-sync-status', function () {
     $payload = Cache::get('powitheta_scheduled_sync_in_progress');
 
+    // Stale-flag guard: a scheduled POWITHETA sync normally finishes in ~2
+    // minutes. If the flag is older than 10 minutes the process died mid-run
+    // (Cache::forget in the command's finally never executed) — stop reporting
+    // it as "running" and clear the stale flag.
+    $stale = is_array($payload) && isset($payload['started_at'])
+        && (time() - strtotime($payload['started_at'])) > 600;
+    if ($stale) {
+        Cache::forget('powitheta_scheduled_sync_in_progress');
+        $payload = null;
+    }
+
     return response()->json([
-        'in_progress' => Cache::has('powitheta_scheduled_sync_in_progress'),
+        'in_progress' => ! $stale && Cache::has('powitheta_scheduled_sync_in_progress'),
         'started_at' => is_array($payload) ? ($payload['started_at'] ?? null) : null,
     ]);
 })->name('api.powitheta-sync-status');
 
 Route::get('/api/staging-modules-sync-status', function () {
     $payload = Cache::get('staging_modules_scheduled_sync_in_progress');
+
+    // Stale-flag guard (same as powitheta endpoint): staging syncs finish in
+    // a few minutes; flags older than 10 minutes are leftovers from a run that
+    // died mid-way — never report them as "running".
+    $stale = is_array($payload) && isset($payload['started_at'])
+        && (time() - strtotime($payload['started_at'])) > 600;
+    if ($stale) {
+        Cache::forget('staging_modules_scheduled_sync_in_progress');
+        $payload = null;
+    }
+
     $lastRunId = StagingModuleSyncHistory::query()->orderByDesc('started_at')->value('run_id');
     $lastRows = $lastRunId
         ? StagingModuleSyncHistory::query()->where('run_id', $lastRunId)->orderBy('module')->get()
         : collect();
 
     return response()->json([
-        'in_progress' => Cache::has('staging_modules_scheduled_sync_in_progress'),
+        'in_progress' => ! $stale && Cache::has('staging_modules_scheduled_sync_in_progress'),
         'started_at' => is_array($payload) ? ($payload['started_at'] ?? null) : null,
         'sap_date_start' => is_array($payload) ? ($payload['sap_date_start'] ?? null) : null,
         'sap_date_end' => is_array($payload) ? ($payload['sap_date_end'] ?? null) : null,
