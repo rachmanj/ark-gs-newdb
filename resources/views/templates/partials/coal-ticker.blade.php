@@ -169,11 +169,14 @@
         content += `</div>`;
 
         // Add USD/IDR exchange rate
-        if (exchangeRate) {
+        if (exchangeRate && exchangeRate.rate !== null) {
             const formattedRate = exchangeRate.rate.toLocaleString('id-ID');
             const updateDateTime = formatDateTimeToWIB(exchangeRate.last_updated);
             content +=
                 `<div class="currency-item">Current Exchange Rate: 1 USD = <span class="currency-rate">IDR ${formattedRate}</span> (Source: exchangerate-api.com) | Last Updated: ${updateDateTime} WIB</div>`;
+        } else {
+            content +=
+                `<div class="currency-item">Current Exchange Rate: tidak tersedia (sumber exchangerate-api.com tidak dapat diakses)</div>`;
         }
 
         tickerContent.innerHTML = content;

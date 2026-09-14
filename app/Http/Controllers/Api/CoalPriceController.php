@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use DOMDocument;
 use Exception;
@@ -188,29 +189,26 @@ class CoalPriceController extends Controller
     {
         try {
             $response = Http::get('https://api.exchangerate-api.com/v4/latest/USD');
-            
-            if ($response->successful()) {
-                $data = $response->json();
-                if (isset($data['rates']['IDR'])) {
-                    return [
-                        'rate' => $data['rates']['IDR'],
-                        'date' => $data['date'],
-                        'last_updated' => $data['time_last_updated']
-                    ];
-                }
+
+            if (!$response->successful()) {
+                Log::warning('Failed to fetch exchange rate: HTTP request failed with status ' . $response->status());
+                return null;
             }
-            
+
+            $data = $response->json();
+            if (!isset($data['rates']['IDR'])) {
+                Log::warning('Failed to fetch exchange rate: rates.IDR not found in API response');
+                return null;
+            }
+
             return [
-                'rate' => 16824.06, // Fallback rate
-                'date' => date('Y-m-d'),
-                'last_updated' => time()
+                'rate' => $data['rates']['IDR'],
+                'date' => $data['date'],
+                'last_updated' => $data['time_last_updated']
             ];
         } catch (\Exception $e) {
-            return [
-                'rate' => 16824.06, // Fallback rate
-                'date' => date('Y-m-d'),
-                'last_updated' => time()
-            ];
+            Log::warning('Failed to fetch exchange rate: ' . $e->getMessage());
+            return null;
         }
     }
 }
