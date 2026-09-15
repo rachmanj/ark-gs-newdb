@@ -61,125 +61,77 @@ class CoalPriceController extends Controller
     protected function getIndonesiaCoalPrice()
     {
         try {
-            // Try to fetch from the Indonesian government HBA page
-            // The URL for the HBA (Harga Batubara Acuan) index
             $url = 'https://www.minerba.esdm.go.id/harga_acuan';
 
             $response = Http::timeout(15)->get($url);
 
-            if ($response->successful()) {
-                $html = $response->body();
+            if (!$response->successful()) {
+                Log::warning('Failed to fetch Indonesia coal price: HTTP request failed with status ' . $response->status());
+                return null;
+            }
 
-                // Try to parse the HTML and extract the data
-                $dom = new DOMDocument();
-                @$dom->loadHTML($html);
+            $html = $response->body();
 
-                $tables = $dom->getElementsByTagName('table');
+            $dom = new DOMDocument();
+            @$dom->loadHTML($html);
 
-                // Check if we have any tables
-                if ($tables->length > 0) {
-                    $table = $tables->item(0);
-                    $rows = $table->getElementsByTagName('tr');
+            $tables = $dom->getElementsByTagName('table');
 
-                    // Skip header row and look for Batubara (USD/ton)
-                    $price = null;
-                    $date = null;
+            if ($tables->length === 0) {
+                Log::warning('Failed to fetch Indonesia coal price: price table not found in HTML response');
+                return null;
+            }
 
-                    foreach ($rows as $row) {
-                        $cells = $row->getElementsByTagName('td');
-                        if ($cells->length > 0) {
-                            $firstCell = $cells->item(0);
-                            if ($firstCell && strpos($firstCell->nodeValue, 'Batubara (USD/ton)') !== false) {
-                                // Found the coal price row, get the most recent price
-                                $price = $cells->item($cells->length - 1)->nodeValue;
-                                $date = date('Y-m-d');
-                                break;
-                            }
-                        }
-                    }
+            $table = $tables->item(0);
+            $rows = $table->getElementsByTagName('tr');
 
-                    if ($price !== null) {
-                        // Extract previous price to calculate change
-                        $previousPrice = null;
-                        if ($cells->length > 2) {
-                            $previousPrice = $cells->item($cells->length - 2)->nodeValue;
-                        }
+            $price = null;
+            $date = null;
+            $cells = null;
 
-                        $change = 0;
-                        if ($previousPrice !== null) {
-                            $change = round($price - $previousPrice, 2);
-                        }
-
-                        return [
-                            'price' => (float) $price,
-                            'change' => $change,
-                            'unit' => 'USD/ton',
-                            'date' => $date
-                        ];
+            foreach ($rows as $row) {
+                $cells = $row->getElementsByTagName('td');
+                if ($cells->length > 0) {
+                    $firstCell = $cells->item(0);
+                    if ($firstCell && strpos($firstCell->nodeValue, 'Batubara (USD/ton)') !== false) {
+                        $price = $cells->item($cells->length - 1)->nodeValue;
+                        $date = date('Y-m-d');
+                        break;
                     }
                 }
             }
 
-            // If we couldn't get the data, return fallback data
-            return $this->getFallbackIndonesiaCoalPrice();
+            if ($price === null) {
+                Log::warning('Failed to fetch Indonesia coal price: Batubara (USD/ton) price not found in table');
+                return null;
+            }
+
+            $previousPrice = null;
+            if ($cells->length > 2) {
+                $previousPrice = $cells->item($cells->length - 2)->nodeValue;
+            }
+
+            $change = 0;
+            if ($previousPrice !== null) {
+                $change = round($price - $previousPrice, 2);
+            }
+
+            return [
+                'price' => (float) $price,
+                'change' => $change,
+                'unit' => 'USD/ton',
+                'date' => $date
+            ];
         } catch (\Exception $e) {
-            // Use fallback data in case of any error
-            return $this->getFallbackIndonesiaCoalPrice();
+            Log::warning('Failed to fetch Indonesia coal price: ' . $e->getMessage());
+            return null;
         }
     }
 
-    /**
-     * Get Newcastle coal price using available public data or estimates
-     */
     protected function getNewcastleCoalPrice()
     {
-        try {
-            // Try to fetch from a public source if available
-            // For now, we use SGX website as mentioned on coaltradeindo.com
-
-            // Since we can't reliably scrape from most financial sites,
-            // we'll use a fallback approach for now
-            return $this->getFallbackNewcastleCoalPrice();
-        } catch (\Exception $e) {
-            return $this->getFallbackNewcastleCoalPrice();
-        }
-    }
-
-    /**
-     * Fallback data for Indonesia coal price
-     */
-    protected function getFallbackIndonesiaCoalPrice()
-    {
-        // Recent HBA price as of our last check with slight random variation
-        $basePrice = 117.76;
-        $randomVariation = mt_rand(-100, 100) / 100; // Random variation between -1 and 1
-
-        return [
-            'price' => round($basePrice + $randomVariation, 2),
-            'change' => round($randomVariation, 2),
-            'unit' => 'USD/ton',
-            'date' => date('Y-m-d'),
-            'source' => 'Estimated (based on recent HBA index)'
-        ];
-    }
-
-    /**
-     * Fallback data for Newcastle coal price
-     */
-    protected function getFallbackNewcastleCoalPrice()
-    {
-        // Newcastle coal is typically higher priced than Indonesian coal
-        // Using API 5 (Newcastle 5,500) as reference with estimate
-        $basePrice = 140.50;
-        $randomVariation = mt_rand(-150, 150) / 100; // Random variation between -1.5 and 1.5
-
-        return [
-            'price' => round($basePrice + $randomVariation, 2),
-            'change' => round($randomVariation, 2),
-            'unit' => 'USD/ton',
-            'date' => date('Y-m-d'),
-            'source' => 'Estimated (based on recent API 5 index)'
-        ];
+        Log::warning('Failed to fetch Newcastle coal price: no reliable data source available');
+        return null;
     }
 
     /**

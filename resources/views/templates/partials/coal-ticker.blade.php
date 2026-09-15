@@ -139,34 +139,42 @@
         let content = '';
 
         // Indonesia Coal Price
-        const indonesiaChangeClass = getChangeClass(indonesiaData.change);
-        content +=
-            `<div class="ticker-item">Indonesia Coal Price Index: <strong>${indonesiaData.price} ${indonesiaData.unit}</strong> `;
-        content +=
-            `<span class="${indonesiaChangeClass}">(${indonesiaData.change >= 0 ? '+' : ''}${indonesiaData.change})</span> | `;
-        content += `Last updated: ${formatDate(indonesiaData.date)}`;
+        if (indonesiaData) {
+            const indonesiaChangeClass = getChangeClass(indonesiaData.change);
+            content +=
+                `<div class="ticker-item">Indonesia Coal Price Index: <strong>${indonesiaData.price} ${indonesiaData.unit}</strong> `;
+            content +=
+                `<span class="${indonesiaChangeClass}">(${indonesiaData.change >= 0 ? '+' : ''}${indonesiaData.change})</span> | `;
+            content += `Last updated: ${formatDate(indonesiaData.date)}`;
 
-        // Add source if available
-        if (indonesiaData.source) {
-            content += `<span class="data-source">(${indonesiaData.source})</span>`;
+            if (indonesiaData.source) {
+                content += `<span class="data-source">(${indonesiaData.source})</span>`;
+            }
+
+            content += `</div>`;
+        } else {
+            content +=
+                `<div class="ticker-item">Indonesia Coal Price Index: tidak tersedia (sumber data tidak dapat diakses)</div>`;
         }
-
-        content += `</div>`;
 
         // Newcastle Coal Price
-        const newcastleChangeClass = getChangeClass(newcastleData.change);
-        content +=
-            `<div class="ticker-item">Newcastle Coal Price Index: <strong>${newcastleData.price} ${newcastleData.unit}</strong> `;
-        content +=
-            `<span class="${newcastleChangeClass}">(${newcastleData.change >= 0 ? '+' : ''}${newcastleData.change})</span> | `;
-        content += `Last updated: ${formatDate(newcastleData.date)}`;
+        if (newcastleData) {
+            const newcastleChangeClass = getChangeClass(newcastleData.change);
+            content +=
+                `<div class="ticker-item">Newcastle Coal Price Index: <strong>${newcastleData.price} ${newcastleData.unit}</strong> `;
+            content +=
+                `<span class="${newcastleChangeClass}">(${newcastleData.change >= 0 ? '+' : ''}${newcastleData.change})</span> | `;
+            content += `Last updated: ${formatDate(newcastleData.date)}`;
 
-        // Add source if available
-        if (newcastleData.source) {
-            content += `<span class="data-source">(${newcastleData.source})</span>`;
+            if (newcastleData.source) {
+                content += `<span class="data-source">(${newcastleData.source})</span>`;
+            }
+
+            content += `</div>`;
+        } else {
+            content +=
+                `<div class="ticker-item">Newcastle Coal Price Index: tidak tersedia (sumber data tidak dapat diakses)</div>`;
         }
-
-        content += `</div>`;
 
         // Add USD/IDR exchange rate
         if (exchangeRate && exchangeRate.rate !== null) {
