@@ -186,9 +186,9 @@ class ExportCenterModules
                 'titles' => [
                     '#',
                     'posting_date',
-                    'document_type',
-                    'document_no',
-                    'project',
+                    'Document Type',
+                    'Document No',
+                    'Project',
                     'dept_code',
                     'item_code',
                     'qty',
