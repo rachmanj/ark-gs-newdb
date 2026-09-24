@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardDailyController;
 use App\Http\Controllers\DashboardMonthlyController;
 use App\Http\Controllers\DashboardOtherController;
 use App\Http\Controllers\DashboardYearlyController;
+use App\Http\Controllers\ExportCenterController;
 use App\Http\Controllers\GrpoController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\IncomingController;
@@ -257,4 +258,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/edit-data', [ProductionPlanController::class, 'getForEdit'])->name('edit-data');
     });
     Route::resource('production-plan', ProductionPlanController::class);
+
+    Route::prefix('export-center')->name('export-center.')->group(function () {
+        Route::get('/', [ExportCenterController::class, 'index'])->name('index');
+        Route::get('/download', [ExportCenterController::class, 'download'])->name('download');
+    });
 });

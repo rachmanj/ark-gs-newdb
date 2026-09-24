@@ -18,6 +18,7 @@
                 @include('templates.partials.menu.dashboard')
                 @include('templates.partials.menu.upload')
                 @include('templates.partials.menu.budget')
+                @include('templates.partials.menu.export')
                 @hasanyrole('superadmin')
                     @include('templates.partials.menu.admin')
                 @endhasanyrole
