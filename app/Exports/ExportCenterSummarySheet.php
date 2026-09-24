@@ -6,13 +6,14 @@ use App\Support\ExportCenterModules;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, WithTitle
+class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, WithTitle, WithStrictNullComparison
 {
     /** @var int[] 1-based row numbers (relative to the data, header excluded) that hold a TOTAL line. */
     private array $totalRowIndexes = [];
@@ -31,7 +32,7 @@ class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, W
 
     public function headings(): array
     {
-        return ['Modul', 'Periode', 'Jumlah Baris', 'Total Amount or Qty'];
+        return ['Modul', 'Periode', 'Jumlah Baris', 'Total Amount / Qty'];
     }
 
     public function array(): array

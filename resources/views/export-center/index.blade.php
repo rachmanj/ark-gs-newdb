@@ -51,10 +51,11 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="d-block">&nbsp;</label>
-                                <button type="button" class="btn btn-outline-secondary" id="btn-last-month">Bulan
-                                    Lalu</button>
-                                <button type="button" class="btn btn-outline-secondary" id="btn-this-month">Bulan
-                                    Ini</button>
+                                <button type="button" class="btn btn-outline-secondary" id="btn-last-month">Last
+                                    Month</button>
+                                <button type="button" class="btn btn-outline-secondary" id="btn-this-month">This
+                                    Month</button>
+                                <small class="form-text text-muted">Tip: exporting one to three months at a time is fastest.</small>
                             </div>
                         </div>
 

@@ -33,6 +33,25 @@ class ExportCenterController extends Controller
             abort(422, 'Rentang maksimum 24 bulan.');
         }
 
+        $maxRows = 150000;
+        $totalRows = 0;
+
+        foreach ($validated['modules'] as $moduleCode) {
+            $module = ExportCenterModules::get($moduleCode);
+            $model = $module['model'];
+            $dateColumn = $module['date_column'];
+
+            $totalRows += $model::query()
+                ->whereBetween($dateColumn, [$startDate, $endDate])
+                ->count();
+        }
+
+        if ($totalRows > $maxRows) {
+            abort(422, "Rentang terlalu besar. Pilih lebih sedikit modul atau rentang bulan yang lebih pendek. Total baris: {$totalRows}, batas: {$maxRows}.");
+        }
+
+        ini_set('memory_limit', '2048M');
+
         $filename = sprintf(
             'ARK-GS_export_%s_to_%s.xlsx',
             $validated['start_month'],
