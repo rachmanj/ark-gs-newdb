@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2026-04-30
+Last Updated: 2026-09-29
 
 ## Architecture Documentation Guidelines
 
@@ -131,6 +131,15 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **History Management**: Manual and batch-captured **monthly** snapshots in **`histories`** (`periode`, `gs_type`, `project_code`, `amount`, `remarks` including `BATCH yyyymmdd`). **UI**: History page modal posts to `HistoryController::generate_monthly`. **CLI**: `php artisan history:generate-monthly` (optional `Y-m-d` capture date; default today) delegates to **`App\Services\MonthlyHistoryCaptureService`**, which reads the same aggregates as **`DashboardDailyController::getDailyData()`** and creates rows for capex, `po_sent`, `grpo_amount`, `incoming_qty`, and `outgoing_qty`. Scheduled: **last calendar day of each month at 23:45** via `app/Console/Kernel.php` (`dailyAt('23:45')` + **`when`** only if `now()->day === now()->daysInMonth`; `withoutOverlapping(60)`).
 -   **Monthly vs daily REGULER/CAPEX budget**: The **daily** dashboard (`CapexController::reguler_daily` / `capex_daily`) sums **`budgets.amount`** per project and month (`budget_type_id` 2 for REG, 8 for CAPEX). The **monthly** dashboard (`MonthlyHistoryController::reguler_history_monthly` / `capex_history_monthly`) uses the same tables and **`sum('amount')`** per project/month so totals match daily when the selected month equals the calendar month used on the daily screen. (Earlier `first()` on budget could undercount when multiple budget lines existed.)
 
+### 5. Inventory Summary
+
+-   **Read-only web page** (`InventorySummaryController::index`, `resources/views/inventory-summary/index.blade.php`, route `GET /inventory-summary` name `inventory-summary.index`) built directly on the `inventory:snapshot-from-sap` data layer — **no SAP query on page load**, only reads `inventory_snapshots`/`inventory_items`.
+-   Picks the **latest `status = success`** snapshot as the sole source of all figures. If the absolute latest snapshot row (any status) is not that same successful one, or no successful snapshot exists at all, the controller passes a `warningMessage` string to the view (banner shown above the KPIs) — page still renders `200` either way.
+-   **KPIs** (AdminLTE `small-box`): Total Items (`snapshot.row_count`), Total Value (`snapshot.total_value`, compact Rb/Jt/M/T suffix with full Rupiah value in a tooltip), Warehouses (`COUNT(DISTINCT whs_code)` on `inventory_items` for that snapshot), Snapshot Date.
+-   **Charts** (Chart.js v4, same `public/adminlte/plugins/chart.js/Chart-4.js` asset as `dashboard.daily.index`): value by warehouse (bar, sorted desc, warehouses beyond 12 collapsed into one "Others" bar), instock by project (bar, `NULL` project labelled `(tanpa project)` to match the existing "no category" convention), value by category (doughnut), and a 12-month total-value trend (line, one point per calendar month from 11 months ago to the current month, months with no successful snapshot plotted as `null`/gap rather than `0`).
+-   **Pivot tables**: Project × Category grid for summed `instock` and a second grid for summed `total_value`; empty cells render as `-`.
+-   Dashboard entry point: a "Ringkasan Inventory" button (`fa-warehouse` icon) in `dashboard.daily.index`'s header, linking to `inventory-summary.index`.
+
 ## Database Schema
 
 ### Core Business Tables
@@ -165,7 +174,7 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **progress_trackers**: System operation tracking
 -   **po_exclusions**: PO numbers excluded from dashboard/report filters (po_no, reason)
 
-#### Inventory Snapshots (data layer only, no UI yet)
+#### Inventory Snapshots
 
 -   **inventory_snapshots**: One row per `inventory:snapshot-from-sap` run (snapshot_date, status success/failed, row_count, total_value, error_message, duration_ms)
 -   **inventory_items**: SAP `OITM`/`OITW`/`OWHS` inventory rows normalized per snapshot (belongs to `inventory_snapshots` via `snapshot_id`, cascade delete); indexed on `(snapshot_id, project)`, `(snapshot_id, category)`, `(snapshot_id, whs_code)`
@@ -197,6 +206,7 @@ All routes follow RESTful conventions with resource controllers:
 /roles/* → Role management
 /permissions/* → Permission management
 /po-exclusions/* → PO exclusion list (admin only; excludes POs from filters)
+/inventory-summary → Read-only inventory summary (KPIs, charts, pivot tables) from the latest successful inventory_snapshots row
 /admin/powitheta-schedule → Superadmin: enable sync, SAP date mode, staging modules flag, sync history (note: POWITHETA run times are fixed in Console `Kernel`; form defaults for times remain for reference / future use)
 /api/powitheta-sync-status → JSON: scheduled sync in progress (public; used by ticker)
 ```
@@ -315,7 +325,7 @@ flowchart LR
 
 **Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). After deploy, run **`php artisan schedule:list`** and confirm POWITHETA (06:05 / 12:05), staging-modules (06:10 / 12:10), and **`history:generate-monthly`** (listed as **23:45** daily; gated to **month-end** in `Kernel::schedule`). See [decisions.md](decisions.md) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
 
-### Inventory snapshot data layer (implemented; no controller/view/route yet)
+### Inventory snapshot data layer + Inventory Summary page (implemented)
 
 ```mermaid
 flowchart LR
@@ -350,7 +360,8 @@ flowchart LR
 -   `ItemCategoryResolver` matches item codes in order: full code → segment before first `-` → 3-letter prefix → 2-letter prefix, against `item_categories` (`is_active = true`); no match returns `"(tanpa kategori)"`. The prefix map is cached on the resolver instance only (never a static property), so it can't leak stale data across requests/workers.
 -   `inventory:snapshot-from-sap` fetches all rows, sums `total_value` at high precision with `bcmath` (truncated to 2 decimals once, matching the `decimal(20,2)` column — not rounded), then writes the snapshot + all items in one `DB::transaction()`. Any exception rolls back item inserts and records a `status = failed` snapshot row with `error_message`; exit code reflects success/failure.
 -   `inventory:prune-snapshots` deletes `inventory_snapshots` older than 12 months; `inventory_items` cascade via FK `cascadeOnDelete()`.
--   Dev machine has no `sqlsrv` extension, so `sap_sql` cannot be exercised locally. Command logic was verified by binding `SapInventoryRepository` to a subclass that overrides the protected `fetchRawRows()` hook with a fixture of 8,742 real pre-fetched SAP rows (one-off `/tmp` script, deleted after use) — no controller/view/route was added in this pass.
+-   Dev machine has no `sqlsrv` extension, so `sap_sql` cannot be exercised locally. Command logic was verified by binding `SapInventoryRepository` to a subclass that overrides the protected `fetchRawRows()` hook with a fixture of 8,742 real pre-fetched SAP rows (one-off `/tmp` script, deleted after use).
+-   `InventorySummaryController` (see "Inventory Summary" under Core Components) reads only `inventory_snapshots`/`inventory_items` — it never queries `sap_sql` — and always renders around whichever snapshot state exists, including zero snapshots or an all-`failed` table (`warningMessage` path).
 
 ## Security Implementation
 

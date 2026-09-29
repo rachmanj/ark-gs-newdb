@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-04-30
+**Last Updated**: 2026-09-29
 
 ## Memory Maintenance Guidelines
 
@@ -27,11 +27,21 @@
 
 ## Project Memory Entries
 
+### [024] Inventory Summary page — read-only KPIs/charts/pivots from latest successful snapshot (2026-09-29) ✅ COMPLETE
+
+**Challenge**: Build the web page for the inventory feature on top of the already-verified data layer (`InventorySnapshot`/`InventoryItem`), with zero SAP queries at page load, and correct behavior when the latest snapshot failed or no successful snapshot exists at all.
+
+**Solution**: `InventorySummaryController::index()` picks the latest `status = success` snapshot as the only source of KPI/chart/pivot numbers, and separately checks the absolute latest snapshot row (any status) to decide whether to pass a `warningMessage` to the view — covers "latest run failed, older success exists" and "no success ever" as distinct, correctly-worded messages. Reused the existing `dashboard.daily.index` pattern for `small-box` KPIs and `public/adminlte/plugins/chart.js/Chart-4.js` (the real v4.4.9 build — `chart.js/Chart.min.js` used elsewhere in the app is actually v2.9.4 despite some pages already using v3/v4-style options against it).
+
+**Key Learning**: `public/adminlte/plugins/chart.js/Chart.min.js` is Chart.js **v2.9.4** (not v3/v4) even though `dashboard/monthly/index.blade.php` already calls it with v3/v4-only option shapes (`scales.y`, `plugins.tooltip`) — Chart.js v2 silently ignores those unknown keys instead of erroring, so that page's tooltip/title customizations never actually apply. `Chart-4.js` in the same folder is the real v4.4.9 build (used by `dashboard.daily.index`); new Chart.js pages in this app should load that file, not `Chart.min.js`.
+
+---
+
 ### [023] Inventory snapshot data layer — SAP sum precision + dev sqlsrv workaround (2026-09-29) ✅ COMPLETE
 
 **Challenge**: Build `inventory_snapshots`/`inventory_items`/`item_categories` tables, models, `SapInventoryRepository`, `ItemCategoryResolver`, and `inventory:snapshot-from-sap`/`inventory:prune-snapshots` commands (data layer only, no controller/view/route), then verify against 8,742 real SAP rows on a dev machine with no `sqlsrv` extension.
 
-**Solution**: Summed `total_value` with `bcmath` (string-based, truncate once to 2 decimals) instead of float+`round()` — matched the expected `42387073313.63` exactly (float round gave `.64`). `ItemCategoryResolver` caches the `item_categories` prefix map as a **private instance property**, never static, per spec. To test without `sqlsrv`, bound `SapInventoryRepository` to a subclass overriding the new protected `fetchRawRows()` hook, reading a pre-fetched `/tmp/inventory_sap_rows.json` fixture (8,742 rows) via a one-off `/tmp` script (deleted after use).
+**Solution**: Summed `total_value` with `bcmath` (string-based, truncate once to 2 decimals) instead of float+`round()` — matches DDS's own truncation convention exactly at `42387073313.63` (native float summation drifts to `42387073313.63463` vs. the exact `42387073313.6352`, and isn't guaranteed reproducible across row order/PHP builds even though `round()` on that drifted value happens to also land on `.63` here). `ItemCategoryResolver` caches the `item_categories` prefix map as a **private instance property**, never static, per spec. To test without `sqlsrv`, bound `SapInventoryRepository` to a subclass overriding the new protected `fetchRawRows()` hook, reading a pre-fetched `/tmp/inventory_sap_rows.json` fixture (8,742 rows) via a one-off `/tmp` script (deleted after use).
 
 **Key Learning**: When summing many decimal SAP values that will be stored in a `decimal(N,2)` column, sum first at high precision then truncate once at the end — per-row rounding-then-summing or float+round() both drift from the "correct" total by a cent on real data. `SapInventoryRepository::fetchAll()` is split into `fetchRawRows()` (protected, DB-specific) + `normalizeRow()` (protected, mapping logic) specifically so tests/dev harnesses can override only the data source.
 

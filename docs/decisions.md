@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2026-04-30
+**Last Updated**: 2026-09-29
 
 # Technical Decision Records
 
@@ -38,9 +38,9 @@ Decision: [Title] - [YYYY-MM-DD]
 
 1. **Sum as PHP floats, `round()` to 2 decimals**:
     - ✅ Pros: Simple.
-    - ❌ Cons: Verified against the real 8,742-row dataset this gives `.64` when the correct/expected total (matching how the value would be truncated into a `decimal(20,2)` column without half-up rounding) is `.63` — off by one cent.
+    - ❌ Cons: Verified against the real 8,742-row dataset, native float summation drifts to `42387073313.63463` (vs. the exact/high-precision total `42387073313.6352`), so `round()` on that drifted float happens to still land on `.63`. The real problem isn't the last digit here — it's that float summation is not reproducible across PHP builds/row order, and there is no guarantee it always lands on the same cent as the source system.
 2. **Sum as strings via `bcmath` at high scale (10), truncate once to 2 decimals with `bcadd($sum, '0', 2)`** (chosen):
-    - ✅ Pros: No float drift across thousands of additions; matches the expected `42387073313.63` exactly; `bcmath` truncates rather than rounds, consistent with per-row `decimal(20,2)` storage.
+    - ✅ Pros: No float drift across thousands of additions; matches DDS's own convention of truncating (not half-up rounding) the same total into 2 decimals, so our figure agrees with how DDS stores it; bounds the maximum possible discrepancy between truncate vs. round to `0.01` even at tens-of-billions scale.
     - ❌ Cons: Slightly more verbose than native float math.
 3. **Static/class-level cache for the `item_categories` prefix map in `ItemCategoryResolver`**:
     - ✅ Pros: Avoids rebuilding the map per resolver instance.

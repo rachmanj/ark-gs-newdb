@@ -24,6 +24,7 @@ use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\PoExclusionController;
 use App\Http\Controllers\ProductionPlanController;
 use App\Http\Controllers\PowithetaScheduleController;
+use App\Http\Controllers\InventorySummaryController;
 use App\Models\StagingModuleSyncHistory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -150,6 +151,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/po-sent-details-data', [POController::class, 'po_sent_details'])->name('po.sent.details');
     });
 
+    Route::get('/inventory-summary', [InventorySummaryController::class, 'index'])->name('inventory-summary.index');
 
     Route::prefix('powitheta')->name('powitheta.')->group(function () {
         Route::get('/convert-to-po', [PowithetaController::class, 'convert_to_po'])->name('convert_to_po');

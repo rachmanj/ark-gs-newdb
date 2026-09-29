@@ -1,8 +1,15 @@
 @extends('templates.main')
 
 @section('title_page')
-    <h1>Dashboard <span class="text-muted font-weight-light">(This Month)</span></h1>
-    <p class="text-muted"><i class="far fa-calendar-alt mr-1"></i> Report Date: {{ $report_date }}</p>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>Dashboard <span class="text-muted font-weight-light">(This Month)</span></h1>
+            <p class="text-muted"><i class="far fa-calendar-alt mr-1"></i> Report Date: {{ $report_date }}</p>
+        </div>
+        <a href="{{ route('inventory-summary.index') }}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-warehouse mr-1"></i> Ringkasan Inventory
+        </a>
+    </div>
 @endsection
 
 @section('breadcrumb_title')
