@@ -27,6 +27,16 @@
 
 ## Project Memory Entries
 
+### [023] Inventory snapshot data layer — SAP sum precision + dev sqlsrv workaround (2026-09-29) ✅ COMPLETE
+
+**Challenge**: Build `inventory_snapshots`/`inventory_items`/`item_categories` tables, models, `SapInventoryRepository`, `ItemCategoryResolver`, and `inventory:snapshot-from-sap`/`inventory:prune-snapshots` commands (data layer only, no controller/view/route), then verify against 8,742 real SAP rows on a dev machine with no `sqlsrv` extension.
+
+**Solution**: Summed `total_value` with `bcmath` (string-based, truncate once to 2 decimals) instead of float+`round()` — matched the expected `42387073313.63` exactly (float round gave `.64`). `ItemCategoryResolver` caches the `item_categories` prefix map as a **private instance property**, never static, per spec. To test without `sqlsrv`, bound `SapInventoryRepository` to a subclass overriding the new protected `fetchRawRows()` hook, reading a pre-fetched `/tmp/inventory_sap_rows.json` fixture (8,742 rows) via a one-off `/tmp` script (deleted after use).
+
+**Key Learning**: When summing many decimal SAP values that will be stored in a `decimal(N,2)` column, sum first at high precision then truncate once at the end — per-row rounding-then-summing or float+round() both drift from the "correct" total by a cent on real data. `SapInventoryRepository::fetchAll()` is split into `fetchRawRows()` (protected, DB-specific) + `normalizeRow()` (protected, mapping logic) specifically so tests/dev harnesses can override only the data source.
+
+---
+
 ### [022] Kernel schedule slots + monthly history CLI + monthly budget sum (2026-04-30) ✅ COMPLETE
 
 **Challenge**: Align ops expectations (06:05/12:05 POWITHETA, staging +5 min, month-end history capture at 23:45); fix **022C**-style Budget mismatch Daily vs Monthly; expose **Generate Monthly Histories** via CLI.

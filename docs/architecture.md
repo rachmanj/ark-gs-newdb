@@ -165,6 +165,12 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **progress_trackers**: System operation tracking
 -   **po_exclusions**: PO numbers excluded from dashboard/report filters (po_no, reason)
 
+#### Inventory Snapshots (data layer only, no UI yet)
+
+-   **inventory_snapshots**: One row per `inventory:snapshot-from-sap` run (snapshot_date, status success/failed, row_count, total_value, error_message, duration_ms)
+-   **inventory_items**: SAP `OITM`/`OITW`/`OWHS` inventory rows normalized per snapshot (belongs to `inventory_snapshots` via `snapshot_id`, cascade delete); indexed on `(snapshot_id, project)`, `(snapshot_id, category)`, `(snapshot_id, whs_code)`
+-   **item_categories**: DDS-sourced prefix → category map (`prefix` unique, `category`, `is_active`), seeded from `docs/item-categories-from-dds.json` via `ItemCategorySeeder`
+
 ### Key Relationships
 
 -   Users → Projects (via project_code)
@@ -308,6 +314,43 @@ flowchart LR
 ```
 
 **Operational rule**: Laravel does not run the scheduler by itself. The server must call `schedule:run` every minute (inexpensive when no job is due). After deploy, run **`php artisan schedule:list`** and confirm POWITHETA (06:05 / 12:05), staging-modules (06:10 / 12:10), and **`history:generate-monthly`** (listed as **23:45** daily; gated to **month-end** in `Kernel::schedule`). See [decisions.md](decisions.md) and [planned-powitheta-scheduled-sync.md](planned-powitheta-scheduled-sync.md).
+
+### Inventory snapshot data layer (implemented; no controller/view/route yet)
+
+```mermaid
+flowchart LR
+    subgraph os [Scheduler]
+        cron2["cron\ndailyAt 06:00 / weeklyOn Mon 03:00"]
+    end
+    subgraph laravel2 [Laravel]
+        k2["Console Kernel"]
+        snap["inventory:snapshot-from-sap"]
+        prune["inventory:prune-snapshots"]
+    end
+    subgraph sap [SAP B1 via sap_sql]
+        sql["docs/sap-queries/inventory-all-warehouse.sql\n(OITM+OITW+OWHS, read-only)"]
+    end
+    subgraph db [ark_gs]
+        repo["SapInventoryRepository::fetchAll()"]
+        res["ItemCategoryResolver\n(item_categories.is_active)"]
+        s1["inventory_snapshots row"]
+        s2["inventory_items rows"]
+    end
+    cron2 --> k2 --> snap
+    snap --> repo --> sql
+    repo --> res
+    snap -->|"1 DB transaction"| s1
+    snap --> s2
+    k2 --> prune -->|"delete snapshot_date < 12mo\n(items cascade)"| s1
+```
+
+**Key points**:
+
+-   `SapInventoryRepository::fetchAll()` reads the DDS SQL file verbatim (never modified/regex'd) and runs it through `DB::connection('sap_sql')` with the same `?` placeholder pattern as `SapService`.
+-   `ItemCategoryResolver` matches item codes in order: full code → segment before first `-` → 3-letter prefix → 2-letter prefix, against `item_categories` (`is_active = true`); no match returns `"(tanpa kategori)"`. The prefix map is cached on the resolver instance only (never a static property), so it can't leak stale data across requests/workers.
+-   `inventory:snapshot-from-sap` fetches all rows, sums `total_value` at high precision with `bcmath` (truncated to 2 decimals once, matching the `decimal(20,2)` column — not rounded), then writes the snapshot + all items in one `DB::transaction()`. Any exception rolls back item inserts and records a `status = failed` snapshot row with `error_message`; exit code reflects success/failure.
+-   `inventory:prune-snapshots` deletes `inventory_snapshots` older than 12 months; `inventory_items` cascade via FK `cascadeOnDelete()`.
+-   Dev machine has no `sqlsrv` extension, so `sap_sql` cannot be exercised locally. Command logic was verified by binding `SapInventoryRepository` to a subclass that overrides the protected `fetchRawRows()` hook with a fixture of 8,742 real pre-fetched SAP rows (one-off `/tmp` script, deleted after use) — no controller/view/route was added in this pass.
 
 ## Security Implementation
 

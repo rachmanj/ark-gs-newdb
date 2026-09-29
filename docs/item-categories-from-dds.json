@@ -1,0 +1,107 @@
+[
+  {
+    "prefix": "CE",
+    "category": "CATERING",
+    "is_active": true
+  },
+  {
+    "prefix": "CO",
+    "category": "CONSIGNMENT",
+    "is_active": true
+  },
+  {
+    "prefix": "FE",
+    "category": "FREE PART",
+    "is_active": true
+  },
+  {
+    "prefix": "FR",
+    "category": "MESS EQUIPMENT",
+    "is_active": true
+  },
+  {
+    "prefix": "FU",
+    "category": "SOLAR",
+    "is_active": true
+  },
+  {
+    "prefix": "GT",
+    "category": "GET",
+    "is_active": true
+  },
+  {
+    "prefix": "IT",
+    "category": "INFORMATION TECNOLOGI",
+    "is_active": true
+  },
+  {
+    "prefix": "LO",
+    "category": "LUBRICATING OIL",
+    "is_active": true
+  },
+  {
+    "prefix": "OH",
+    "category": "OVERHEAD COST",
+    "is_active": true
+  },
+  {
+    "prefix": "OS",
+    "category": "OFFICE SUPPLY",
+    "is_active": true
+  },
+  {
+    "prefix": "RC",
+    "category": "RECONDITION COMPONEN",
+    "is_active": true
+  },
+  {
+    "prefix": "RM",
+    "category": "RE-US",
+    "is_active": true
+  },
+  {
+    "prefix": "SA",
+    "category": "SAFETY SUPPLY",
+    "is_active": true
+  },
+  {
+    "prefix": "SOLAR",
+    "category": "SOLAR",
+    "is_active": true
+  },
+  {
+    "prefix": "SP",
+    "category": "SPAREPART",
+    "is_active": true
+  },
+  {
+    "prefix": "TO",
+    "category": "TOOLS",
+    "is_active": true
+  },
+  {
+    "prefix": "TY",
+    "category": "TYRE",
+    "is_active": true
+  },
+  {
+    "prefix": "UC",
+    "category": "UNDERCARRIAGE",
+    "is_active": true
+  },
+  {
+    "prefix": "US",
+    "category": "RE-US",
+    "is_active": true
+  },
+  {
+    "prefix": "VOE",
+    "category": "SPAREPART",
+    "is_active": true
+  },
+  {
+    "prefix": "WO",
+    "category": "WORKSHOP CONSUMABLE",
+    "is_active": true
+  }
+]

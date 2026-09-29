@@ -30,6 +30,32 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+### Decision: Inventory snapshot data layer — truncate (not round) total_value; instance-cached category resolver - 2026-09-29
+
+**Context**: New `inventory:snapshot-from-sap` command must sum ~8,700 SAP rows' `total_value` into a `decimal(20,2)` snapshot total, and resolve each item's DDS category without leaking a stale prefix map across requests.
+
+**Options Considered**:
+
+1. **Sum as PHP floats, `round()` to 2 decimals**:
+    - ✅ Pros: Simple.
+    - ❌ Cons: Verified against the real 8,742-row dataset this gives `.64` when the correct/expected total (matching how the value would be truncated into a `decimal(20,2)` column without half-up rounding) is `.63` — off by one cent.
+2. **Sum as strings via `bcmath` at high scale (10), truncate once to 2 decimals with `bcadd($sum, '0', 2)`** (chosen):
+    - ✅ Pros: No float drift across thousands of additions; matches the expected `42387073313.63` exactly; `bcmath` truncates rather than rounds, consistent with per-row `decimal(20,2)` storage.
+    - ❌ Cons: Slightly more verbose than native float math.
+3. **Static/class-level cache for the `item_categories` prefix map in `ItemCategoryResolver`**:
+    - ✅ Pros: Avoids rebuilding the map per resolver instance.
+    - ❌ Cons: Explicitly disallowed by spec — static state would survive across requests/queue workers and could serve stale categories after `item_categories` changes.
+
+**Decision**: Sum with `bcmath` (string-based, truncate-once-at-the-end) for `total_value`; cache the prefix map only as a private **instance** property on `ItemCategoryResolver` (rebuilt whenever a new instance is resolved, e.g. once per command run via DI).
+
+**Rationale**: Financial totals must be exact and reproducible; instance-level caching gives O(1) DB lookups per command run without any cross-request state.
+
+**Implementation**: `App\Console\Commands\InventorySnapshotFromSapCommand::sumTotalValue()`, `App\Services\Inventory\ItemCategoryResolver::$prefixMap` (private, non-static).
+
+**Review Date**: Revisit if SAP inventory volume grows enough that summation performance matters, or if category resolution needs cross-request caching (e.g. Redis) for a future high-traffic endpoint.
+
+---
+
 ### Decision: Fixed Laravel scheduler wall times — POWITHETA, staging-modules, monthly history - 2026-04-30
 
 **Context**: Operations asked for deterministic twice-daily SAP refresh at **06:05** / **12:05**, staging-modules **five minutes later**, and automated monthly **`histories`** capture (**revised 2026**: **month-end 23:45**). Earlier, POWITHETA and staging shared the same **`sync_times`** slots from JSON, which drifted from this intent.

@@ -43,6 +43,13 @@ class Kernel extends ConsoleKernel
                     ->withoutOverlapping(25);
             }
         }
+
+        $schedule->command('inventory:snapshot-from-sap')
+            ->dailyAt('06:00')
+            ->withoutOverlapping(30);
+
+        $schedule->command('inventory:prune-snapshots')
+            ->weeklyOn(1, '03:00');
     }
 
     /**
