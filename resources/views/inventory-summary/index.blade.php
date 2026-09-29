@@ -147,7 +147,7 @@
 
             <!-- Pivot Tables -->
             <div class="row">
-                <div class="col-lg-6 mb-4">
+                <div class="col-12 mb-4">
                     <div class="card shadow-sm border-0">
                         <div class="card-header border-0">
                             <h3 class="card-title">
@@ -187,7 +187,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6 mb-4">
+            </div>
+            <div class="row">
+                <div class="col-12 mb-4">
                     <div class="card shadow-sm border-0">
                         <div class="card-header border-0">
                             <h3 class="card-title">
