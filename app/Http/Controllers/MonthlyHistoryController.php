@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 class MonthlyHistoryController extends Controller
 {
     public $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+    public $hidden_projects_reguler_grpo = ['023C', '026C'];
 
     public function index($date)
     {
@@ -29,6 +30,10 @@ class MonthlyHistoryController extends Controller
         $year = substr($date, 0, 4);
 
         foreach ($this->include_projects as $project) {
+            if (in_array($project, $this->hidden_projects_reguler_grpo)) {
+                continue;
+            }
+
             $budget = (float) $this->plant_budget_history_monthly($date, $project)
                 ->where('budget_type_id', 2)
                 ->sum('amount');
@@ -157,6 +162,10 @@ class MonthlyHistoryController extends Controller
         $year = substr($date, 0, 4);
 
         foreach ($this->include_projects as $project) {
+            if (in_array($project, $this->hidden_projects_reguler_grpo)) {
+                continue;
+            }
+
             $gs_types_includes = ['po_sent', 'capex'];
             $po_sent_amount = History::select('amount', 'project_code')
                 ->where('periode', 'monthly')
