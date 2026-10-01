@@ -21,33 +21,51 @@
                     <form id="export-center-form" action="{{ route('export-center.download') }}" method="GET">
                         <div class="form-group">
                             <label>Modules</label>
-                            <p class="text-muted small mb-2">
-                                Laporan SAP ditarik langsung dari SAP saat tombol unduh ditekan.
-                                Laporan nomor 10 menampilkan posisi stok terkini sehingga tidak terpengaruh bulan yang dipilih.
-                            </p>
-                            <h6 class="font-weight-bold mt-2">Data ARK-GS</h6>
-                            <div class="mb-3">
-                                @foreach ($arkModules as $module)
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" name="modules[]"
-                                            id="module-{{ $module['code'] }}" value="{{ $module['code'] }}" checked>
-                                        <label class="form-check-label" for="module-{{ $module['code'] }}">
-                                            {{ $module['label'] }}
-                                        </label>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <h6 class="font-weight-bold">Laporan SAP (PRC and Logistik)</h6>
-                            <div>
-                                @foreach ($sapModules as $module)
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" name="modules[]"
-                                            id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
-                                        <label class="form-check-label" for="module-{{ $module['code'] }}">
-                                            {{ $module['label'] }}
-                                        </label>
-                                    </div>
-                                @endforeach
+                            <ul class="nav nav-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="export-tab-ark-link" data-toggle="tab" href="#tab-ark"
+                                        role="tab" aria-controls="tab-ark" aria-selected="true">
+                                        Data ARK-GS
+                                        <span class="text-muted" id="export-tab-ark-count">(0)</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="export-tab-sap-link" data-toggle="tab" href="#tab-sap"
+                                        role="tab" aria-controls="tab-sap" aria-selected="false">
+                                        Laporan SAP (PRC and Logistik)
+                                        <span class="text-muted" id="export-tab-sap-count">(0)</span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="tab-ark" role="tabpanel"
+                                    aria-labelledby="export-tab-ark-link">
+                                    @foreach ($arkModules as $module)
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" name="modules[]"
+                                                id="module-{{ $module['code'] }}" value="{{ $module['code'] }}" checked>
+                                            <label class="form-check-label" for="module-{{ $module['code'] }}">
+                                                {{ $module['label'] }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="tab-pane fade" id="tab-sap" role="tabpanel"
+                                    aria-labelledby="export-tab-sap-link">
+                                    <p class="text-muted small mb-2">
+                                        Laporan SAP ditarik langsung dari SAP saat tombol unduh ditekan.
+                                        Laporan nomor 10 menampilkan posisi stok terkini sehingga tidak terpengaruh bulan yang dipilih.
+                                    </p>
+                                    @foreach ($sapModules as $module)
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" name="modules[]"
+                                                id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
+                                            <label class="form-check-label" for="module-{{ $module['code'] }}">
+                                                {{ $module['label'] }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
 
@@ -98,6 +116,20 @@
             function formatYearMonth(date) {
                 return date.getFullYear() + '-' + pad(date.getMonth() + 1);
             }
+
+            function updateTabModuleCounts() {
+                var arkPane = document.getElementById('tab-ark');
+                var sapPane = document.getElementById('tab-sap');
+                var arkCount = arkPane.querySelectorAll('input[name="modules[]"]:checked').length;
+                var sapCount = sapPane.querySelectorAll('input[name="modules[]"]:checked').length;
+                document.getElementById('export-tab-ark-count').textContent = '(' + arkCount + ')';
+                document.getElementById('export-tab-sap-count').textContent = '(' + sapCount + ')';
+            }
+
+            document.querySelectorAll('input[name="modules[]"]').forEach(function(checkbox) {
+                checkbox.addEventListener('change', updateTabModuleCounts);
+            });
+            updateTabModuleCounts();
 
             document.getElementById('btn-this-month').addEventListener('click', function() {
                 var now = new Date();
