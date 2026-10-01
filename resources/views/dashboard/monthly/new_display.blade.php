@@ -428,6 +428,88 @@
                     </div>
                 </div>
             </div>
+
+            <!-- PO Sent Summary by Project -->
+            <div class="row mt-4">
+                <div class="col-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-gradient-info text-white border-0">
+                            <h3 class="card-title">
+                                <i class="fas fa-table mr-1"></i>
+                                PO Sent Summary by Project - {{ $poSentMatrix['year'] }} <small>(IDR 000)</small>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-hover table-compact table-sm">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="text-left align-middle" style="width: 150px; font-size: 0.9rem;">
+                                                Project</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Jan</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Feb</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Mar</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Apr</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">May</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Jun</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Jul</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Aug</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Sep</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Oct</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Nov</th>
+                                            <th class="text-center" style="font-size: 0.9rem;">Dec</th>
+                                            <th class="text-center align-middle" style="width: 110px; font-size: 0.9rem;">
+                                                Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($poSentMatrix['projects'] as $projectRow)
+                                            <tr>
+                                                <td class="font-weight-bold">{{ $projectRow['project'] }}</td>
+                                                @for ($m = 1; $m <= 12; $m++)
+                                                    <td class="text-right">
+                                                        @if ($projectRow['months'][$m] === null)
+                                                            -
+                                                        @else
+                                                            {{ number_format($projectRow['months'][$m] / 1000, 0, ',', '.') }}
+                                                        @endif
+                                                    </td>
+                                                @endfor
+                                                <td class="text-right font-weight-bold">
+                                                    @if ($projectRow['total'] === null)
+                                                        -
+                                                    @else
+                                                        {{ number_format($projectRow['total'] / 1000, 0, ',', '.') }}
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        <tr class="font-weight-bold bg-light">
+                                            <td>TOTAL</td>
+                                            @for ($m = 1; $m <= 12; $m++)
+                                                <td class="text-right">
+                                                    @if ($poSentMatrix['totals']['months'][$m] === null)
+                                                        -
+                                                    @else
+                                                        {{ number_format($poSentMatrix['totals']['months'][$m] / 1000, 0, ',', '.') }}
+                                                    @endif
+                                                </td>
+                                            @endfor
+                                            <td class="text-right">
+                                                @if ($poSentMatrix['totals']['total'] === null)
+                                                    -
+                                                @else
+                                                    {{ number_format($poSentMatrix['totals']['total'] / 1000, 0, ',', '.') }}
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection

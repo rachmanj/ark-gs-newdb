@@ -27,6 +27,7 @@ class DashboardMonthlyController extends Controller
         // Get data for the current year and next year for the chart
         $year = substr($request->month, 0, 4);
         $yearlyData = $this->getYearlyChartData($year);
+        $poSentMatrix = $this->getPoSentMatrixByProject($year);
 
         return view('dashboard.monthly.new_display', [
             'month' => $request->month,
@@ -34,8 +35,75 @@ class DashboardMonthlyController extends Controller
             // 'plant_budget' => $this->plant_budget($request->month),
             // 'histories' => $this->monthly_history_amount($request->month),
             'data' => $data,
-            'yearlyData' => $yearlyData
+            'yearlyData' => $yearlyData,
+            'poSentMatrix' => $poSentMatrix
         ]);
+    }
+
+    /**
+     * Build the PO Sent per project per month matrix for a full year.
+     * Months with no history record are returned as null so the view can
+     * render them as a hyphen instead of a misleading zero.
+     *
+     * @param string $year
+     * @return array
+     */
+    public function getPoSentMatrixByProject($year)
+    {
+        $projects = ['017C', '021C', '022C', '025C', 'APS'];
+
+        $rows = History::selectRaw('project_code, MONTH(date) as month, SUM(amount) as amount')
+            ->where('periode', 'monthly')
+            ->where('gs_type', 'po_sent')
+            ->whereIn('project_code', $projects)
+            ->whereYear('date', $year)
+            ->groupBy('project_code', 'month')
+            ->get();
+
+        $values = [];
+        foreach ($rows as $row) {
+            $values[$row->project_code][(int) $row->month] = (float) $row->amount;
+        }
+
+        $monthTotals = array_fill(1, 12, null);
+        $projectRows = [];
+
+        foreach ($projects as $project) {
+            $months = [];
+            $projectTotal = null;
+
+            for ($month = 1; $month <= 12; $month++) {
+                $amount = $values[$project][$month] ?? null;
+                $months[$month] = $amount;
+
+                if ($amount !== null) {
+                    $projectTotal = ($projectTotal ?? 0) + $amount;
+                    $monthTotals[$month] = ($monthTotals[$month] ?? 0) + $amount;
+                }
+            }
+
+            $projectRows[] = [
+                'project' => $project,
+                'months' => $months,
+                'total' => $projectTotal,
+            ];
+        }
+
+        $grandTotal = null;
+        foreach ($monthTotals as $amount) {
+            if ($amount !== null) {
+                $grandTotal = ($grandTotal ?? 0) + $amount;
+            }
+        }
+
+        return [
+            'year' => $year,
+            'projects' => $projectRows,
+            'totals' => [
+                'months' => $monthTotals,
+                'total' => $grandTotal,
+            ],
+        ];
     }
 
     public function plant_budget($date)
