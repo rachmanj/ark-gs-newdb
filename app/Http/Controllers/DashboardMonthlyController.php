@@ -86,7 +86,7 @@ class DashboardMonthlyController extends Controller
         $previousYearBudget = [];
 
         // Include projects
-        $include_projects = ['017C', '021C', '022C', '023C', '025C', '026C', 'APS'];
+        $include_projects = ['017C', '021C', '022C', '025C', 'APS'];
 
         // Get data for each month
         foreach ($months as $index => $month) {
