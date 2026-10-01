@@ -54,17 +54,23 @@
                                     aria-labelledby="export-tab-sap-link">
                                     <p class="text-muted small mb-2">
                                         Laporan SAP ditarik langsung dari SAP saat tombol unduh ditekan.
-                                        Laporan nomor 10 menampilkan posisi stok terkini sehingga tidak terpengaruh bulan yang dipilih.
                                     </p>
-                                    @foreach ($sapModules as $module)
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="checkbox" name="modules[]"
-                                                id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
-                                            <label class="form-check-label" for="module-{{ $module['code'] }}">
-                                                {{ $module['label'] }}
-                                            </label>
-                                        </div>
-                                    @endforeach
+                                    <ul class="list-group">
+                                        @foreach ($sapModules as $module)
+                                            <li class="list-group-item">
+                                                <div class="form-check mb-0">
+                                                    <input class="form-check-input" type="checkbox" name="modules[]"
+                                                        id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
+                                                    <label class="form-check-label" for="module-{{ $module['code'] }}">
+                                                        {{ $module['label'] }}
+                                                        @if ($module['code'] === 'sap10')
+                                                            <small class="text-muted d-block">Menampilkan posisi stok terkini; tidak terpengaruh bulan yang dipilih.</small>
+                                                        @endif
+                                                    </label>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
                                 </div>
                             </div>
                         </div>

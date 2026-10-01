@@ -54,6 +54,36 @@ class ExportCenterTabsTest extends TestCase
         $sap10Checkbox = $xpath->query("//div[@id='tab-sap']//input[@type='checkbox' and @id='module-sap10']");
         $this->assertCount(1, $sap10Checkbox);
 
+        $sapListItems = $xpath->query("//div[@id='tab-sap']//li[contains(concat(' ', normalize-space(@class), ' '), ' list-group-item ')]");
+        $this->assertCount(count($sapModules), $sapListItems, 'Each SAP report should appear on its own list row.');
+
+        foreach ($sapModules as $module) {
+            $moduleCheckboxInListItem = $xpath->query(
+                "//div[@id='tab-sap']//li[contains(concat(' ', normalize-space(@class), ' '), ' list-group-item ')]//input[@type='checkbox' and @id='module-{$module['code']}']"
+            );
+            $this->assertCount(
+                1,
+                $moduleCheckboxInListItem,
+                "SAP module {$module['code']} should be inside a list-group-item."
+            );
+        }
+
+        $sapInlineChecks = $xpath->query("//div[@id='tab-sap']//div[contains(concat(' ', normalize-space(@class), ' '), ' form-check-inline ')]");
+        $this->assertCount(0, $sapInlineChecks, 'SAP reports should not use inline checkbox layout.');
+
+        $arkInlineChecks = $xpath->query("//div[@id='tab-ark']//div[contains(concat(' ', normalize-space(@class), ' '), ' form-check-inline ')]");
+        $this->assertCount(count($arkModules), $arkInlineChecks, 'ARK-GS modules should remain inline checkboxes.');
+
+        $sapIntroParagraph = $xpath->query("//div[@id='tab-sap']/p[contains(@class, 'text-muted')]");
+        $this->assertCount(1, $sapIntroParagraph);
+        $sapIntroText = trim($sapIntroParagraph->item(0)->textContent);
+        $this->assertStringContainsString('Laporan SAP ditarik langsung dari SAP', $sapIntroText);
+        $this->assertStringNotContainsString('posisi stok terkini', $sapIntroText);
+
+        $sap10StockNote = $xpath->query("//div[@id='tab-sap']//label[@for='module-sap10']//small[contains(@class, 'text-muted')]");
+        $this->assertCount(1, $sap10StockNote);
+        $this->assertStringContainsString('stok terkini', trim($sap10StockNote->item(0)->textContent));
+
         $poOutsideArk = $xpath->query("//div[@id='tab-sap']//input[@id='module-po']");
         $this->assertCount(0, $poOutsideArk);
 
