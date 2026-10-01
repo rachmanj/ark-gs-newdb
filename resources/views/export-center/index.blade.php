@@ -43,7 +43,7 @@
                                     @foreach ($arkModules as $module)
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="checkbox" name="modules[]"
-                                                id="module-{{ $module['code'] }}" value="{{ $module['code'] }}" checked>
+                                                id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
                                             <label class="form-check-label" for="module-{{ $module['code'] }}">
                                                 {{ $module['label'] }}
                                             </label>

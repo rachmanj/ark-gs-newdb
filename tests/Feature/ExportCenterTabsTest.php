@@ -59,5 +59,19 @@ class ExportCenterTabsTest extends TestCase
 
         $sap01OutsideSap = $xpath->query("//div[@id='tab-ark']//input[@id='module-sap01']");
         $this->assertCount(0, $sap01OutsideSap);
+
+        $arkChecked = $xpath->query("//div[@id='tab-ark']//input[@type='checkbox' and @name='modules[]' and @checked]");
+        $this->assertCount(0, $arkChecked, 'No ARK-GS module checkbox should be checked on initial load.');
+
+        $sapChecked = $xpath->query("//div[@id='tab-sap']//input[@type='checkbox' and @name='modules[]' and @checked]");
+        $this->assertCount(0, $sapChecked, 'No SAP report module checkbox should be checked on initial load.');
+
+        $arkCountEl = $dom->getElementById('export-tab-ark-count');
+        $this->assertNotNull($arkCountEl);
+        $this->assertSame('(0)', trim($arkCountEl->textContent));
+
+        $sapCountEl = $dom->getElementById('export-tab-sap-count');
+        $this->assertNotNull($sapCountEl);
+        $this->assertSame('(0)', trim($sapCountEl->textContent));
     }
 }
