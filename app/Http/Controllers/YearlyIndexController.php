@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 class YearlyIndexController extends Controller
 {
     public $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+    public $hidden_projects_reguler_grpo = ['023C', '026C'];
     private $included_dept_codes = ['40', '50', '60', '140', '200'];
     private $excluded_item_codes = ['EX%', 'FU%', 'PB%', 'Pp%', 'SA%', 'SO%', 'SV%'];
     private $excluded_item_codes_with_co; // Will include 'CO%' for specific methods
@@ -43,6 +44,10 @@ class YearlyIndexController extends Controller
     public function reguler_yearly()
     {
         foreach ($this->include_projects as $project) {
+            if (in_array($project, $this->hidden_projects_reguler_grpo)) {
+                continue;
+            }
+
             $budget = $this->plant_budget()->where('project_code', $project)
                 ->where('budget_type_id', 2)
                 ->sum('amount');
@@ -167,6 +172,10 @@ class YearlyIndexController extends Controller
     public function grpo_index()
     {
         foreach ($this->include_projects as $project) {
+            if (in_array($project, $this->hidden_projects_reguler_grpo)) {
+                continue;
+            }
+
             $po_sent_amount = $this->po_sent_amount()->where('project_code', $project)
                 ->sum('item_amount');
 

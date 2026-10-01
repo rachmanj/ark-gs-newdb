@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class DashboardYearlyController extends Controller
 {
+    private const HIDDEN_PROJECTS = ['023C', '026C'];
+
     public function index()
     {
         $years = DB::table('histories')->select('periode', 'date')
@@ -226,20 +228,21 @@ class DashboardYearlyController extends Controller
         $grpoData = [];
         
         $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+        $visible_projects = array_values(array_diff($include_projects, self::HIDDEN_PROJECTS));
 
         for ($i = 4; $i >= 0; $i--) {
             $year = $currentYear - $i;
             $years[] = $year;
 
             $budget = DB::table('budgets')
-                ->whereIn('project_code', $include_projects)
+                ->whereIn('project_code', $visible_projects)
                 ->where('budget_type_id', 2)
                 ->whereYear('date', $year)
                 ->sum('amount');
             $budgetData[] = round($budget / 1000, 2);
 
             $poSent = DB::table('histories')
-                ->whereIn('project_code', $include_projects)
+                ->whereIn('project_code', $visible_projects)
                 ->where('periode', 'yearly')
                 ->where('gs_type', 'po_sent')
                 ->whereYear('date', $year)
@@ -247,7 +250,7 @@ class DashboardYearlyController extends Controller
             $poSentData[] = round($poSent / 1000, 2);
 
             $grpo = DB::table('histories')
-                ->whereIn('project_code', $include_projects)
+                ->whereIn('project_code', $visible_projects)
                 ->where('periode', 'yearly')
                 ->where('gs_type', 'grpo_amount')
                 ->whereYear('date', $year)
@@ -290,22 +293,23 @@ class DashboardYearlyController extends Controller
     {
         $currentYear = Carbon::now()->year;
         $include_projects = ['017C', '021C', '022C', '025C', '026C', 'APS', '023C'];
+        $visible_projects = array_values(array_diff($include_projects, self::HIDDEN_PROJECTS));
 
         $totalBudget = DB::table('budgets')
-            ->whereIn('project_code', $include_projects)
+            ->whereIn('project_code', $visible_projects)
             ->where('budget_type_id', 2)
             ->whereYear('date', $currentYear)
             ->sum('amount');
 
         $totalPoSent = DB::table('histories')
-            ->whereIn('project_code', $include_projects)
+            ->whereIn('project_code', $visible_projects)
             ->where('periode', 'yearly')
             ->where('gs_type', 'po_sent')
             ->whereYear('date', $currentYear)
             ->sum('amount');
 
         $totalGrpo = DB::table('histories')
-            ->whereIn('project_code', $include_projects)
+            ->whereIn('project_code', $visible_projects)
             ->where('periode', 'yearly')
             ->where('gs_type', 'grpo_amount')
             ->whereYear('date', $currentYear)
