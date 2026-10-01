@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Support\ExportCenterModules;
+use App\Support\SapReportModules;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -19,9 +20,11 @@ class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, W
     private array $totalRowIndexes = [];
 
     public function __construct(
-        private array $moduleCodes,
+        private array $arkModuleCodes,
+        private array $sapModuleCodes,
         private Carbon $startDate,
-        private Carbon $endDate
+        private Carbon $endDate,
+        private array $sapRowData = []
     ) {
     }
 
@@ -40,7 +43,7 @@ class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, W
         $rows = [];
         $rowNumber = 0;
 
-        foreach ($this->moduleCodes as $moduleCode) {
+        foreach ($this->arkModuleCodes as $moduleCode) {
             $module = ExportCenterModules::get($moduleCode);
             if (! $module) {
                 continue;
@@ -80,6 +83,24 @@ class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, W
             $this->totalRowIndexes[] = $rowNumber;
         }
 
+        $periodLabel = $this->startDate->format('Y-m') . ' s/d ' . $this->endDate->format('Y-m');
+
+        foreach ($this->sapModuleCodes as $sapCode) {
+            $module = SapReportModules::get($sapCode);
+            if (! $module) {
+                continue;
+            }
+
+            $rowCount = count($this->sapRowData[$sapCode] ?? []);
+
+            $rows[] = [$module['label'], $periodLabel, $rowCount, ''];
+            $rowNumber++;
+
+            $rows[] = [$module['label'], 'TOTAL', $rowCount, ''];
+            $rowNumber++;
+            $this->totalRowIndexes[] = $rowNumber;
+        }
+
         return $rows;
     }
 
@@ -89,7 +110,7 @@ class ExportCenterSummarySheet implements FromArray, WithHeadings, WithStyles, W
         $sheet->getStyle('A1:D1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         foreach ($this->totalRowIndexes as $rowNumber) {
-            $excelRow = $rowNumber + 1; // +1 because row 1 is the header
+            $excelRow = $rowNumber + 1;
             $sheet->getStyle('A' . $excelRow . ':D' . $excelRow)->getFont()->setBold(true);
             $sheet->getStyle('A' . $excelRow . ':D' . $excelRow)->getFill()
                 ->setFillType(Fill::FILL_SOLID)

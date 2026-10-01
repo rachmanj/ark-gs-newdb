@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2026-09-29
+**Last Updated**: 2026-10-01
 
 ## Memory Maintenance Guidelines
 
@@ -26,6 +26,16 @@
 ---
 
 ## Project Memory Entries
+
+### [025] Export Center SAP report modules via OUQR (2026-10-01) ✅ COMPLETE
+
+**Challenge**: Add 11 PRC/Logistik SAP reports to Export Center without duplicating SQL in ARK-GS; dev has no `sqlsrv`, so behavior must be unit-tested with mocked `sap_sql`.
+
+**Solution**: `SapReportModules` (11 codes, `ouqr_key` 836–856), `SapQueryRepository::definition/run` (read `OUQR`, `str_replace` `[%0]`/`[%1]`, strip trailing `FOR BROWSE`, normalize rows). Controller runs each selected SAP query once into `$sapRowData` before row-limit check and workbook build.
+
+**Key Learning**: SAP report #10 (`sap10`, key 845) has `uses_date_range = false`; inventory SQL has no date tokens. Row cap 150k applies to ARK-GS counts plus SAP row counts combined.
+
+---
 
 ### [024] Inventory Summary page — read-only KPIs/charts/pivots from latest successful snapshot (2026-09-29) ✅ COMPLETE
 

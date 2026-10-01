@@ -21,11 +21,28 @@
                     <form id="export-center-form" action="{{ route('export-center.download') }}" method="GET">
                         <div class="form-group">
                             <label>Modules</label>
-                            <div>
-                                @foreach ($modules as $module)
+                            <p class="text-muted small mb-2">
+                                Laporan SAP ditarik langsung dari SAP saat tombol unduh ditekan.
+                                Laporan nomor 10 menampilkan posisi stok terkini sehingga tidak terpengaruh bulan yang dipilih.
+                            </p>
+                            <h6 class="font-weight-bold mt-2">Data ARK-GS</h6>
+                            <div class="mb-3">
+                                @foreach ($arkModules as $module)
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="checkbox" name="modules[]"
                                             id="module-{{ $module['code'] }}" value="{{ $module['code'] }}" checked>
+                                        <label class="form-check-label" for="module-{{ $module['code'] }}">
+                                            {{ $module['label'] }}
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <h6 class="font-weight-bold">Laporan SAP (PRC and Logistik)</h6>
+                            <div>
+                                @foreach ($sapModules as $module)
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="modules[]"
+                                            id="module-{{ $module['code'] }}" value="{{ $module['code'] }}">
                                         <label class="form-check-label" for="module-{{ $module['code'] }}">
                                             {{ $module['label'] }}
                                         </label>

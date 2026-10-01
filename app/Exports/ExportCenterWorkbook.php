@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Support\ExportCenterModules;
+use App\Support\SapReportModules;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
@@ -11,25 +12,43 @@ class ExportCenterWorkbook implements WithMultipleSheets
     public function __construct(
         private array $moduleCodes,
         private Carbon $startDate,
-        private Carbon $endDate
+        private Carbon $endDate,
+        private array $sapRowData = []
     ) {
     }
 
     public function sheets(): array
     {
-        // Modules always appear in this fixed order, regardless of the order
-        // they were submitted in, and only when they were actually selected.
-        $orderedCodes = array_values(array_filter(
+        $orderedArkCodes = array_values(array_filter(
             ExportCenterModules::codes(),
             fn (string $code) => in_array($code, $this->moduleCodes, true)
         ));
 
+        $orderedSapCodes = array_values(array_filter(
+            SapReportModules::codes(),
+            fn (string $code) => in_array($code, $this->moduleCodes, true)
+        ));
+
         $sheets = [
-            new ExportCenterSummarySheet($orderedCodes, $this->startDate, $this->endDate),
+            new ExportCenterSummarySheet(
+                $orderedArkCodes,
+                $orderedSapCodes,
+                $this->startDate,
+                $this->endDate,
+                $this->sapRowData
+            ),
         ];
 
-        foreach ($orderedCodes as $code) {
+        foreach ($orderedArkCodes as $code) {
             $sheets[] = new ExportCenterModuleSheet($code, $this->startDate, $this->endDate);
+        }
+
+        foreach ($orderedSapCodes as $code) {
+            $module = SapReportModules::get($code);
+            $sheets[] = new SapReportSheet(
+                $module['sheet_name'],
+                $this->sapRowData[$code] ?? []
+            );
         }
 
         return $sheets;

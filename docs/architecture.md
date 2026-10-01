@@ -87,6 +87,7 @@ This document describes the CURRENT WORKING STATE of the application architectur
 -   **GRPO Controller**: Manages goods receipt processing
 -   **MIGI Controller**: Processes material issue data
 -   **INCOMING Controller**: Handles incoming material tracking
+-   **Export Center** (`ExportCenterController`): Multi-module Excel workbook for ARK-GS tables (PO/GRPO/MIGI/Incoming) plus 11 SAP OUQR reports (`SapReportModules`, `SapQueryRepository` on `sap_sql` connection reading `OUQR` and executing `QString` with `[%0]`/`[%1]` date tokens).
 -   **Daily Production Controller**: Manages production data entry and tracking
 
 ### 2. Dashboard System

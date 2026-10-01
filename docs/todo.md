@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2026-09-29
+**Last Updated**: 2026-10-01
 
 ## Task Management Guidelines
 
@@ -59,6 +59,7 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Export Center — 11 SAP OUQR reports (PRC/Logistik) [SapReportModules; SapQueryRepository; SapReportSheet; ExportCenterController/Workbook/Summary; tests/Feature/SapReportExportTest.php; MEMORY [025]] (completed: 2026-10-01)`
 -   `[done] P1: Inventory Summary page — controller, index view, route, dashboard link [InventorySummaryController; resources/views/inventory-summary/index.blade.php; routes/web.php inventory-summary.index; resources/views/dashboard/daily/index.blade.php title_page button; MEMORY [024]] (completed: 2026-09-29)`
 -   `[done] P1: Inventory snapshot data layer — migrations, models, ItemCategoryResolver, SapInventoryRepository, inventory:snapshot-from-sap + inventory:prune-snapshots commands, Kernel schedule (06:00 daily / Mon 03:00 weekly) [app/Models/{InventorySnapshot,InventoryItem,ItemCategory}.php; app/Repositories/SapInventoryRepository.php; app/Services/Inventory/ItemCategoryResolver.php; app/Console/Commands/Inventory*.php; database/seeders/ItemCategorySeeder.php; MEMORY [023]] (completed: 2026-09-29)`
 -   `[done] P2: Laravel scheduler — fixed POWITHETA 06:05/12:05, staging-modules +5 min, monthly history month-end 23:45 [app/Console/Kernel.php; docs/planned-powitheta-scheduled-sync.md; MEMORY [022]] (completed: 2026-04-30)`
